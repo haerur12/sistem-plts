@@ -25,27 +25,29 @@ function getFlash(): ?array {
 }
 
 function statusBadge(string $status): string {
+    // [kelas badge, kelas titik status, label]
     $map = [
-        'survei'      => ['bg-slate-100 text-slate-600',    'Survei'],
-        'perencanaan' => ['bg-blue-100 text-blue-600',      'Perencanaan'],
-        'instalasi'   => ['bg-indigo-100 text-indigo-700',  'Instalasi'],
-        'selesai'     => ['bg-green-100 text-green-700',    'Selesai'],
-        'ditunda'     => ['bg-yellow-100 text-yellow-700',  'Ditunda'],
-        'terjadwal'   => ['bg-slate-100 text-slate-600',    'Terjadwal'],
-        'berjalan'    => ['bg-blue-100 text-blue-700',      'Berjalan'],
-        'belum_mulai' => ['bg-slate-100 text-slate-600',    'Belum Mulai'],
-        'dalam_proses'=> ['bg-blue-100 text-blue-700',      'Dalam Proses'],
-        'terkendala'  => ['bg-red-100 text-red-700',        'Terkendala'],
+        'survei'      => ['bg-slate-50 text-slate-600 ring-1 ring-slate-200',       'bg-slate-400',       'Survei'],
+        'perencanaan' => ['bg-sky-50 text-sky-700 ring-1 ring-sky-200',             'bg-sky-500',         'Perencanaan'],
+        'instalasi'   => ['bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200',    'bg-indigo-500',      'Instalasi'],
+        'selesai'     => ['bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200', 'bg-emerald-500',     'Selesai'],
+        'ditunda'     => ['bg-amber-50 text-amber-700 ring-1 ring-amber-200',       'bg-amber-500',       'Ditunda'],
+        'terjadwal'   => ['bg-slate-50 text-slate-600 ring-1 ring-slate-200',       'bg-slate-400',       'Terjadwal'],
+        'berjalan'    => ['bg-blue-50 text-blue-700 ring-1 ring-blue-200',          'bg-blue-500',        'Berjalan'],
+        'belum_mulai' => ['bg-slate-50 text-slate-600 ring-1 ring-slate-200',       'bg-slate-400',       'Belum Mulai'],
+        'dalam_proses'=> ['bg-blue-50 text-blue-700 ring-1 ring-blue-200',          'bg-blue-500',        'Dalam Proses'],
+        'terkendala'  => ['bg-red-50 text-red-700 ring-1 ring-red-200',             'bg-red-500',         'Terkendala'],
     ];
-    [$cls, $label] = $map[$status] ?? ['bg-gray-100 text-gray-600', ucfirst($status)];
-    return "<span class=\"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium $cls\">$label</span>";
+    [$cls, $dot, $label] = $map[$status] ?? ['bg-gray-50 text-gray-600 ring-1 ring-gray-200', 'bg-gray-400', ucfirst($status)];
+    return "<span class=\"badge-modern inline-flex items-center gap-1.5 rounded-full text-xs font-semibold $cls\">"
+         . "<span class=\"w-1.5 h-1.5 rounded-full $dot\"></span>$label</span>";
 }
 
 function stokStatus(int $stok, int $min): array {
-    if ($stok <= 0)           return ['bg-gray-100 text-gray-500',    'Habis',  'habis'];
-    if ($stok <= $min)        return ['bg-red-100 text-red-700',      'Kritis', 'kritis'];
-    if ($stok <= $min * 1.5)  return ['bg-yellow-100 text-yellow-700','Rendah', 'rendah'];
-    return ['bg-green-100 text-green-700', 'Aman', 'aman'];
+    if ($stok <= 0)           return ['bg-gray-50 text-gray-500 ring-1 ring-gray-200',       'Habis',  'habis'];
+    if ($stok <= $min)        return ['bg-red-50 text-red-700 ring-1 ring-red-200',          'Kritis', 'kritis'];
+    if ($stok <= $min * 1.5)  return ['bg-amber-50 text-amber-700 ring-1 ring-amber-200',    'Rendah', 'rendah'];
+    return ['bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200', 'Aman', 'aman'];
 }
 
 function formatTanggal(string $date): string {

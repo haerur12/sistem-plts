@@ -33,8 +33,8 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <div class="flex items-center justify-between mb-5">
     <div>
-        <h2 class="text-lg font-semibold text-slate-800">Penggunaan Material</h2>
-        <p class="text-sm text-slate-400 mt-0.5"><?= $total ?> total catatan</p>
+        <h2 class="text-lg font-bold text-slate-900 tracking-tight">Penggunaan Material</h2>
+        <p class="text-[13px] text-slate-500 mt-1"><?= $total ?> total catatan</p>
     </div>
     <a href="<?= BASE_URL ?>/pages/material/create.php" class="btn-primary">
         <i class="bi bi-plus-lg"></i> Catat Penggunaan
@@ -55,7 +55,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <th class="table-header">Keterangan</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-50">
+            <tbody class="divide-y divide-slate-100">
                 <?php if (empty($materials)): ?>
                 <tr><td colspan="7" class="px-4 py-12 text-center">
                     <i class="bi bi-inbox text-4xl text-slate-200 block mb-2"></i>
@@ -87,7 +87,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             <?php for ($pg = 1; $pg <= $totalPages; $pg++): ?>
             <a href="?page=<?= $pg ?>"
                 class="w-8 h-8 flex items-center justify-center rounded-lg text-xs
-                <?= $pg === $page ? 'bg-primary-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+                <?= $pg === $page ? 'bg-primary-600 text-white shadow-sm shadow-primary-600/30' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
                 <?= $pg ?>
             </a>
             <?php endfor; ?>

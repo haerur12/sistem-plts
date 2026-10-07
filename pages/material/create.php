@@ -21,7 +21,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             <i class="bi bi-arrow-left text-slate-500"></i>
         </a>
         <div>
-            <h2 class="text-lg font-semibold text-slate-800">Catat Penggunaan Material</h2>
+            <h2 class="text-lg font-bold text-slate-900 tracking-tight">Catat Penggunaan Material</h2>
             <p class="text-sm text-slate-400">Stok otomatis berkurang setelah dicatat</p>
         </div>
     </div>
@@ -89,7 +89,7 @@ include __DIR__ . '/../../includes/sidebar.php';
     <!-- Tabel stok saat ini -->
     <div class="card mt-4 overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-100">
-            <h3 class="text-sm font-semibold text-slate-700">Stok Komponen Tersedia</h3>
+            <h3 class="text-sm font-bold text-slate-800 tracking-tight">Stok Komponen Tersedia</h3>
         </div>
         <table class="w-full">
             <thead class="bg-slate-50 border-b border-slate-100">
@@ -99,7 +99,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <th class="table-header">Status</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-50">
+            <tbody class="divide-y divide-slate-100">
                 <?php foreach ($komponen as $k):
                     [$cls, $label] = stokStatus($k['stok_tersedia'], $k['stok_minimum']);
                 ?>
@@ -109,7 +109,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                         <span class="text-xs text-slate-400 ml-1">(<?= sanitize($k['kategori']) ?>)</span>
                     </td>
                     <td class="table-cell"><span class="font-semibold"><?= $k['stok_tersedia'] ?></span> <span class="text-xs text-slate-400"><?= sanitize($k['satuan']) ?></span></td>
-                    <td class="table-cell"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium <?= $cls ?>"><?= $label ?></span></td>
+                    <td class="table-cell"><span class="badge-modern inline-flex items-center rounded-full text-xs font-semibold <?= $cls ?>"><?= $label ?></span></td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>

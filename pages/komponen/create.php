@@ -16,7 +16,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             <i class="bi bi-arrow-left text-slate-500"></i>
         </a>
         <div>
-            <h2 class="text-lg font-semibold text-slate-800">Tambah Komponen PLTS</h2>
+            <h2 class="text-lg font-bold text-slate-900 tracking-tight">Tambah Komponen PLTS</h2>
             <p class="text-sm text-slate-400">Data master komponen dan stok awal</p>
         </div>
     </div>

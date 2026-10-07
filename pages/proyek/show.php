@@ -62,7 +62,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             <i class="bi bi-arrow-left text-slate-500"></i>
         </a>
         <div>
-            <h2 class="text-lg font-semibold text-slate-800"><?= sanitize($proyek['nama_proyek']) ?></h2>
+            <h2 class="text-lg font-bold text-slate-900 tracking-tight"><?= sanitize($proyek['nama_proyek']) ?></h2>
             <p class="text-sm text-slate-400"><?= sanitize($proyek['nama_pelanggan']) ?></p>
         </div>
     </div>
@@ -79,16 +79,16 @@ include __DIR__ . '/../../includes/sidebar.php';
     <!-- Info Proyek -->
     <div class="space-y-4">
         <div class="card p-5">
-            <h3 class="text-sm font-semibold text-slate-700 mb-4">Informasi Proyek</h3>
+            <h3 class="text-sm font-bold text-slate-800 tracking-tight mb-4">Informasi Proyek</h3>
 
             <!-- Progres Bar -->
             <div class="mb-5">
                 <div class="flex justify-between items-center mb-2">
                     <span class="text-xs text-slate-500">Progres Pengerjaan</span>
-                    <span class="text-sm font-bold text-primary-800"><?= $proyek['progres'] ?>%</span>
+                    <span class="text-sm font-bold text-primary-700"><?= $proyek['progres'] ?>%</span>
                 </div>
                 <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-primary-700 rounded-full transition-all" style="width:<?= $proyek['progres'] ?>%"></div>
+                    <div class="h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full progress-fill" style="width:<?= $proyek['progres'] ?>%"></div>
                 </div>
                 <div class="mt-2"><?= statusBadge($proyek['status']) ?></div>
             </div>
@@ -128,7 +128,7 @@ include __DIR__ . '/../../includes/sidebar.php';
         <!-- Update Status (Teknisi & Manajer) -->
         <?php if (!isGudang()): ?>
         <div class="card p-5">
-            <h3 class="text-sm font-semibold text-slate-700 mb-4">Perbarui Status</h3>
+            <h3 class="text-sm font-bold text-slate-800 tracking-tight mb-4">Perbarui Status</h3>
             <form method="POST" action="<?= BASE_URL ?>/api/proyek/update.php">
                 <input type="hidden" name="id" value="<?= $id ?>">
                 <div class="space-y-3">
@@ -170,8 +170,8 @@ include __DIR__ . '/../../includes/sidebar.php';
         <!-- Jadwal Instalasi -->
         <div class="card overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 class="text-sm font-semibold text-slate-700">
-                    <i class="bi bi-calendar3 text-primary-700 mr-1"></i> Jadwal Instalasi
+                <h3 class="text-sm font-bold text-slate-800 tracking-tight">
+                    <i class="bi bi-calendar3 text-primary-600 mr-1"></i> Jadwal Instalasi
                 </h3>
                 <span class="text-xs text-slate-400"><?= count($jadwals) ?> jadwal</span>
             </div>
@@ -190,7 +190,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                         <th class="table-header">Status</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-50">
+                <tbody class="divide-y divide-slate-100">
                     <?php foreach ($jadwals as $j): ?>
                     <tr class="table-row">
                         <td class="table-cell text-xs"><?= formatTanggalShort($j['tanggal_mulai']) ?></td>
@@ -207,13 +207,13 @@ include __DIR__ . '/../../includes/sidebar.php';
         <!-- Laporan Lapangan -->
         <div class="card overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 class="text-sm font-semibold text-slate-700">
+                <h3 class="text-sm font-bold text-slate-800 tracking-tight">
                     <i class="bi bi-file-earmark-text text-green-600 mr-1"></i> Laporan Lapangan
                 </h3>
                 <div class="flex items-center gap-3">
                     <span class="text-xs text-slate-400"><?= count($laporans) ?> laporan</span>
                     <?php if (isTeknisi() || isAdminOrManajer()): ?>
-                    <a href="<?= BASE_URL ?>/pages/laporan/create.php?proyek_id=<?= $id ?>" class="text-xs text-primary-700 hover:text-primary-900 font-medium">
+                    <a href="<?= BASE_URL ?>/pages/laporan/create.php?proyek_id=<?= $id ?>" class="text-xs text-primary-600 hover:text-primary-700 font-medium">
                         <i class="bi bi-plus-lg"></i> Tambah
                     </a>
                     <?php endif; ?>
@@ -225,7 +225,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                 <p class="text-sm text-slate-400">Belum ada laporan lapangan</p>
             </div>
             <?php else: ?>
-            <div class="divide-y divide-slate-50">
+            <div class="divide-y divide-slate-100">
                 <?php foreach ($laporans as $l): ?>
                 <div class="px-5 py-4">
                     <div class="flex items-start justify-between gap-3">
@@ -254,7 +254,7 @@ include __DIR__ . '/../../includes/sidebar.php';
         <!-- Penggunaan Material -->
         <div class="card overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 class="text-sm font-semibold text-slate-700">
+                <h3 class="text-sm font-bold text-slate-800 tracking-tight">
                     <i class="bi bi-boxes text-amber-600 mr-1"></i> Penggunaan Material
                 </h3>
                 <span class="text-xs text-slate-400"><?= count($materials) ?> catatan</span>
@@ -274,7 +274,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                         <th class="table-header">Tanggal</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-50">
+                <tbody class="divide-y divide-slate-100">
                     <?php foreach ($materials as $m): ?>
                     <tr class="table-row">
                         <td class="table-cell text-sm font-medium"><?= sanitize($m['nama_komponen']) ?></td>

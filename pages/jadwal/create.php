@@ -19,7 +19,7 @@ include __DIR__ . '/../../includes/sidebar.php';
         <a href="<?= BASE_URL ?>/pages/jadwal/index.php" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
             <i class="bi bi-arrow-left text-slate-500"></i>
         </a>
-        <h2 class="text-lg font-semibold text-slate-800">Tambah Jadwal Instalasi</h2>
+        <h2 class="text-lg font-bold text-slate-900 tracking-tight">Tambah Jadwal Instalasi</h2>
     </div>
     <div class="card p-6">
         <form method="POST" action="<?= BASE_URL ?>/api/jadwal/store.php">

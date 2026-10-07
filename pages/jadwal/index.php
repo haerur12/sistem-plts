@@ -32,8 +32,8 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <div class="flex items-center justify-between mb-5">
     <div>
-        <h2 class="text-lg font-semibold text-slate-800">Jadwal Instalasi</h2>
-        <p class="text-sm text-slate-400 mt-0.5"><?= $total ?> total jadwal</p>
+        <h2 class="text-lg font-bold text-slate-900 tracking-tight">Jadwal Instalasi</h2>
+        <p class="text-[13px] text-slate-500 mt-1"><?= $total ?> total jadwal</p>
     </div>
     <a href="<?= BASE_URL ?>/pages/jadwal/create.php" class="btn-primary">
         <i class="bi bi-calendar-plus"></i> Tambah Jadwal
@@ -54,7 +54,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <th class="table-header">Aksi</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-50">
+            <tbody class="divide-y divide-slate-100">
                 <?php if (empty($jadwals)): ?>
                 <tr><td colspan="7" class="px-4 py-12 text-center">
                     <i class="bi bi-calendar-x text-4xl text-slate-200 block mb-2"></i>

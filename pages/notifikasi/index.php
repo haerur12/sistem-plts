@@ -39,8 +39,8 @@ include __DIR__ . '/../../includes/sidebar.php';
 <div class="max-w-2xl mx-auto">
     <div class="flex items-center justify-between mb-5">
         <div>
-            <h2 class="text-lg font-semibold text-slate-800">Notifikasi</h2>
-            <p class="text-sm text-slate-400 mt-0.5"><?= $belumDibaca ?> belum dibaca</p>
+            <h2 class="text-lg font-bold text-slate-900 tracking-tight">Notifikasi</h2>
+            <p class="text-[13px] text-slate-500 mt-1"><?= $belumDibaca ?> belum dibaca</p>
         </div>
         <?php if ($belumDibaca > 0): ?>
         <a href="?baca_semua=1" class="btn-secondary btn-sm">
@@ -52,11 +52,11 @@ include __DIR__ . '/../../includes/sidebar.php';
     <div class="card overflow-hidden">
         <?php if (empty($notifikasis)): ?>
         <div class="px-5 py-16 text-center">
-            <i class="bi bi-bell-slash text-5xl text-slate-200 block mb-3"></i>
+            <span class="empty-icon mb-3 !w-16 !h-16"><i class="bi bi-bell-slash"></i></span>
             <p class="text-slate-400">Tidak ada notifikasi</p>
         </div>
         <?php else: ?>
-        <div class="divide-y divide-slate-50">
+        <div class="divide-y divide-slate-100">
             <?php foreach ($notifikasis as $n): ?>
             <div class="flex gap-4 px-5 py-4 <?= $n['status_baca'] === 'belum_dibaca' ? 'bg-blue-50/50' : '' ?> hover:bg-slate-50 transition-colors">
                 <div class="flex-shrink-0 mt-0.5">
@@ -89,7 +89,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             <?php for ($pg = 1; $pg <= $totalPages; $pg++): ?>
             <a href="?page=<?= $pg ?>"
                 class="w-8 h-8 flex items-center justify-center rounded-lg text-xs
-                <?= $pg === $page ? 'bg-primary-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+                <?= $pg === $page ? 'bg-primary-600 text-white shadow-sm shadow-primary-600/30' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
                 <?= $pg ?>
             </a>
             <?php endfor; ?>

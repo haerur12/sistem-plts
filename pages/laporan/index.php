@@ -51,8 +51,8 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <div class="flex items-center justify-between mb-5">
     <div>
-        <h2 class="text-lg font-semibold text-slate-800">Laporan Lapangan</h2>
-        <p class="text-sm text-slate-400 mt-0.5"><?= $totalRows ?> total laporan</p>
+        <h2 class="text-lg font-bold text-slate-900 tracking-tight">Laporan Lapangan</h2>
+        <p class="text-[13px] text-slate-500 mt-1"><?= $totalRows ?> total laporan</p>
     </div>
     <?php if (isTeknisi() || isAdminOrManajer()): ?>
     <a href="<?= BASE_URL ?>/pages/laporan/create.php" class="btn-primary">
@@ -69,7 +69,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                 <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
                 <input type="text" name="search" value="<?= sanitize($search) ?>"
                     placeholder="Cari judul laporan..."
-                    class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 transition-all">
             </div>
         </div>
         <select name="status" class="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
@@ -142,7 +142,7 @@ include __DIR__ . '/../../includes/sidebar.php';
         <?php for ($pg = 1; $pg <= $totalPages; $pg++): ?>
         <a href="?page=<?= $pg ?>&status=<?= urlencode($filterStatus) ?>&search=<?= urlencode($search) ?>"
             class="w-8 h-8 flex items-center justify-center rounded-lg text-xs transition-colors
-            <?= $pg === $page ? 'bg-primary-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200' ?>">
+            <?= $pg === $page ? 'bg-primary-600 text-white shadow-sm shadow-primary-600/30' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200' ?>">
             <?= $pg ?>
         </a>
         <?php endfor; ?>

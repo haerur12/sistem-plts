@@ -37,8 +37,8 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <div class="flex items-center justify-between mb-5">
     <div>
-        <h2 class="text-lg font-semibold text-slate-800">Komponen PLTS</h2>
-        <p class="text-sm text-slate-400 mt-0.5"><?= $totalRows ?> total komponen</p>
+        <h2 class="text-lg font-bold text-slate-900 tracking-tight">Komponen PLTS</h2>
+        <p class="text-[13px] text-slate-500 mt-1"><?= $totalRows ?> total komponen</p>
     </div>
     <?php if (isAdminOrGudang()): ?>
     <a href="<?= BASE_URL ?>/pages/komponen/create.php" class="btn-primary">
@@ -55,7 +55,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                 <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
                 <input type="text" name="search" value="<?= sanitize($search) ?>"
                     placeholder="Cari nama komponen..."
-                    class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 transition-all">
             </div>
         </div>
         <select name="kategori" class="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
@@ -75,20 +75,20 @@ include __DIR__ . '/../../includes/sidebar.php';
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
     <?php if (empty($komponen)): ?>
     <div class="col-span-full card px-5 py-16 text-center">
-        <i class="bi bi-grid-3x3-gap text-5xl text-slate-200 block mb-3"></i>
+        <span class="empty-icon mb-3 !w-16 !h-16"><i class="bi bi-grid-3x3-gap"></i></span>
         <p class="text-slate-400">Belum ada data komponen</p>
     </div>
     <?php else: ?>
     <?php foreach ($komponen as $k):
         [$cls, $label, $statusKey] = stokStatus($k['stok_tersedia'], $k['stok_minimum']);
-        $bgCard = $statusKey === 'kritis' || $statusKey === 'habis' ? 'border-red-200' : 'border-slate-100';
+        $bgCard = $statusKey === 'kritis' || $statusKey === 'habis' ? 'border-red-200 bg-red-50/30' : 'border-slate-200/70';
     ?>
-    <div class="card p-5 border <?= $bgCard ?>">
+    <div class="card card-hover p-5 border <?= $bgCard ?>">
         <div class="flex items-start justify-between mb-3">
             <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center">
                 <i class="bi bi-cpu text-slate-500"></i>
             </div>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium <?= $cls ?>"><?= $label ?></span>
+            <span class="badge-modern inline-flex items-center rounded-full text-xs font-semibold <?= $cls ?>"><?= $label ?></span>
         </div>
         <h4 class="text-sm font-semibold text-slate-800 mb-1 leading-tight"><?= sanitize($k['nama_komponen']) ?></h4>
         <p class="text-xs text-slate-400 mb-4"><?= sanitize($k['kategori']) ?></p>
@@ -140,7 +140,7 @@ include __DIR__ . '/../../includes/sidebar.php';
         <?php for ($pg = 1; $pg <= $totalPages; $pg++): ?>
         <a href="?page=<?= $pg ?>&search=<?= urlencode($search) ?>&kategori=<?= urlencode($kat) ?>"
             class="w-8 h-8 flex items-center justify-center rounded-lg text-xs transition-colors
-            <?= $pg === $page ? 'bg-primary-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200' ?>">
+            <?= $pg === $page ? 'bg-primary-600 text-white shadow-sm shadow-primary-600/30' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200' ?>">
             <?= $pg ?>
         </a>
         <?php endfor; ?>

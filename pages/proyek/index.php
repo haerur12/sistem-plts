@@ -47,8 +47,8 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <div class="flex items-center justify-between mb-5">
     <div>
-        <h2 class="text-lg font-semibold text-slate-800">Daftar Proyek</h2>
-        <p class="text-sm text-slate-400 mt-0.5"><?= $totalRows ?> total proyek</p>
+        <h2 class="text-lg font-bold text-slate-900 tracking-tight">Daftar Proyek</h2>
+        <p class="text-[13px] text-slate-500 mt-1"><?= $totalRows ?> total proyek</p>
     </div>
     <?php if (isAdmin()): ?>
     <a href="<?= BASE_URL ?>/pages/proyek/create.php" class="btn-primary">
@@ -67,7 +67,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                 </div>
                 <input type="text" name="search" value="<?= sanitize($search) ?>"
                     placeholder="Cari nama proyek..."
-                    class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 transition-all">
             </div>
         </div>
         <select name="status" class="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
@@ -103,11 +103,11 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <th class="table-header">Aksi</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-50">
+            <tbody class="divide-y divide-slate-100">
                 <?php if (empty($proyeks)): ?>
                 <tr>
                     <td colspan="8" class="px-4 py-12 text-center">
-                        <i class="bi bi-diagram-3 text-4xl text-slate-200 block mb-2"></i>
+                        <span class="empty-icon mb-3"><i class="bi bi-diagram-3"></i></span>
                         <p class="text-sm text-slate-400">Belum ada data proyek</p>
                     </td>
                 </tr>
@@ -117,7 +117,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <td class="table-cell text-slate-400"><?= $offset + $i + 1 ?></td>
                     <td class="table-cell">
                         <a href="<?= BASE_URL ?>/pages/proyek/show.php?id=<?= $p['id'] ?>"
-                            class="font-medium text-slate-800 hover:text-primary-700">
+                            class="font-medium text-slate-800 hover:text-primary-600">
                             <?= sanitize($p['nama_proyek']) ?>
                         </a>
                     </td>
@@ -134,8 +134,8 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <td class="table-cell"><?= statusBadge($p['status']) ?></td>
                     <td class="table-cell">
                         <div class="flex items-center gap-2 min-w-20">
-                            <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                <div class="h-full bg-primary-700 rounded-full" style="width:<?= $p['progres'] ?>%"></div>
+                            <div class="flex-1 h-1.5 progress-track rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full progress-fill" style="width:<?= $p['progres'] ?>%"></div>
                             </div>
                             <span class="text-xs text-slate-500 w-8 text-right"><?= $p['progres'] ?>%</span>
                         </div>
@@ -143,7 +143,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <td class="table-cell">
                         <div class="flex items-center gap-1">
                             <a href="<?= BASE_URL ?>/pages/proyek/show.php?id=<?= $p['id'] ?>"
-                                class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-primary-700 transition-colors" title="Detail">
+                                class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-primary-600 transition-colors" title="Detail">
                                 <i class="bi bi-eye text-sm"></i>
                             </a>
                             <?php if (isAdminOrManajer()): ?>
@@ -177,7 +177,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             <?php for ($pg = 1; $pg <= $totalPages; $pg++): ?>
             <a href="?page=<?= $pg ?>&status=<?= urlencode($filterStatus) ?>&search=<?= urlencode($search) ?>"
                 class="w-8 h-8 flex items-center justify-center rounded-lg text-xs transition-colors
-                <?= $pg === $page ? 'bg-primary-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+                <?= $pg === $page ? 'bg-primary-600 text-white shadow-sm shadow-primary-600/30' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
                 <?= $pg ?>
             </a>
             <?php endfor; ?>

@@ -19,7 +19,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             <i class="bi bi-arrow-left text-slate-500"></i>
         </a>
         <div>
-            <h2 class="text-lg font-semibold text-slate-800">Tambah Proyek Baru</h2>
+            <h2 class="text-lg font-bold text-slate-900 tracking-tight">Tambah Proyek Baru</h2>
             <p class="text-sm text-slate-400">Isi data proyek instalasi PLTS</p>
         </div>
     </div>
