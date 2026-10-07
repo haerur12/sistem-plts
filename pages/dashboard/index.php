@@ -105,7 +105,7 @@ $sapaan = $jam < 11 ? 'Selamat pagi' : ($jam < 15 ? 'Selamat siang' : ($jam < 18
         <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
             <h3 class="text-sm font-bold text-slate-800 tracking-tight">Proyek Terbaru</h3>
             <?php if (isAdminOrManajer()): ?>
-            <a href="<?= BASE_URL ?>/pages/proyek/index.php" class="text-xs text-primary-600 hover:text-primary-800 font-semibold inline-flex items-center gap-1">
+            <a href="<?= BASE_URL ?>/pages/proyek/index.php" class="text-xs text-primary-600 hover:text-primary-700 font-semibold inline-flex items-center gap-1">
                 Lihat Semua <i class="bi bi-arrow-right"></i>
             </a>
             <?php endif; ?>
@@ -149,7 +149,7 @@ $sapaan = $jam < 11 ? 'Selamat pagi' : ($jam < 15 ? 'Selamat siang' : ($jam < 18
     <div class="card overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
             <h3 class="text-sm font-bold text-slate-800 tracking-tight">Laporan Lapangan Terbaru</h3>
-            <a href="<?= BASE_URL ?>/pages/laporan/index.php" class="text-xs text-primary-600 hover:text-primary-800 font-semibold inline-flex items-center gap-1">
+            <a href="<?= BASE_URL ?>/pages/laporan/index.php" class="text-xs text-primary-600 hover:text-primary-700 font-semibold inline-flex items-center gap-1">
                 Lihat Semua <i class="bi bi-arrow-right"></i>
             </a>
         </div>
@@ -191,7 +191,7 @@ $sapaan = $jam < 11 ? 'Selamat pagi' : ($jam < 15 ? 'Selamat siang' : ($jam < 18
                 <i class="bi bi-exclamation-triangle-fill text-red-500"></i>
                 Komponen Stok Kritis
             </h3>
-            <a href="<?= BASE_URL ?>/pages/komponen/index.php" class="text-xs text-primary-600 hover:text-primary-800 font-semibold inline-flex items-center gap-1">
+            <a href="<?= BASE_URL ?>/pages/komponen/index.php" class="text-xs text-primary-600 hover:text-primary-700 font-semibold inline-flex items-center gap-1">
                 Kelola <i class="bi bi-arrow-right"></i>
             </a>
         </div>
