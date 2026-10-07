@@ -1,0 +1,79 @@
+/* assets/css/app.css */
+/* Custom styles tambahan di atas Tailwind */
+
+/* Scrollbar kustom */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Animasi fade in halaman */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+main { animation: fadeIn 0.2s ease-out; }
+
+/* Table row hover smooth */
+.table-row { transition: background-color 0.1s ease; }
+
+/* Form input focus ring */
+.form-input:focus,
+.form-select:focus {
+    outline: none;
+    border-color: #3949ab;
+    box-shadow: 0 0 0 3px rgba(57, 73, 171, 0.1);
+}
+
+/* Card hover effect */
+.card-hover {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card-hover:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
+}
+
+/* Badge stok */
+.stok-aman   { background:#dcfce7; color:#15803d; }
+.stok-rendah { background:#fef3c7; color:#b45309; }
+.stok-kritis { background:#fee2e2; color:#b91c1c; }
+.stok-habis  { background:#f1f5f9; color:#64748b; }
+
+/* Print styles */
+@media print {
+    aside, header, .btn-primary, .btn-secondary, .btn-danger,
+    form[method="POST"], nav { display: none !important; }
+    main { margin: 0 !important; padding: 0 !important; }
+    .card { box-shadow: none !important; border: 1px solid #e2e8f0 !important; }
+}
+
+/* Loading state */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+    cursor: wait;
+}
+
+/* Sidebar active indicator */
+.sidebar-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 20px;
+    background: #fbbf24;
+    border-radius: 0 2px 2px 0;
+}
+.sidebar-link { position: relative; }
+
+/* Transition halus semua elemen */
+*, *::before, *::after {
+    transition-property: color, background-color, border-color, opacity;
+    transition-duration: 0.15s;
+    transition-timing-function: ease;
+}
+/* Kecualikan transform dari transition global (cegah lag) */
+img, svg, canvas { transition: none; }
