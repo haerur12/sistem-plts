@@ -20,5 +20,7 @@ if ($k && $k['stok_tersedia'] <= $k['stok_minimum']) {
     kirimNotifikasiKeRole('admin','Peringatan Stok Minimum',"Stok \"{$k['nama_komponen']}\" perlu segera diisi ulang.");
 }
 
+require_once __DIR__ . '/../../includes/activity.php';
+logActivity('update_komponen', 'update', "Memperbarui komponen: " . trim($_POST['nama_komponen']), 'komponen');
 setFlash('success','Komponen berhasil diperbarui.');
 redirect(BASE_URL.'/pages/komponen/index.php');

@@ -39,5 +39,7 @@ $_SESSION['user'] = [
 ];
 
 session_regenerate_id(true);
+require_once __DIR__ . '/../../includes/activity.php';
+logActivity('login', 'login', 'Masuk ke sistem', 'auth');
 setFlash('success', 'Selamat datang, ' . $user['nama'] . '!');
 redirect(BASE_URL . '/pages/dashboard/index.php');

@@ -57,6 +57,24 @@ $inisial   = strtoupper(substr($user['nama'] ?? 'U', 0, 1));
             <span>Dashboard</span>
         </a>
 
+        <?php if (isAdmin()): ?>
+        <a href="<?= BASE_URL ?>/pages/activity-log/index.php"
+            class="sidebar-link <?= $currentPage === 'activity-log' ? 'active' : '' ?>">
+            <i class="bi bi-activity w-5 text-center text-base"></i>
+            <span>Activity Log</span>
+            <span class="ml-auto bg-amber-400 text-primary-900 text-[9px] font-bold rounded-full px-1.5 py-0.5">BARU</span>
+        </a>
+        <?php endif; ?>
+
+        <?php if (isAdminOrManajer()): ?>
+        <a href="<?= BASE_URL ?>/pages/analitik/index.php"
+            class="sidebar-link <?= $currentPage === 'analitik' ? 'active' : '' ?>">
+            <i class="bi bi-graph-up-arrow w-5 text-center text-base"></i>
+            <span>Laporan & Analitik</span>
+            <span class="ml-auto bg-amber-400 text-primary-900 text-[9px] font-bold rounded-full px-1.5 py-0.5">BARU</span>
+        </a>
+        <?php endif; ?>
+
         <a href="<?= BASE_URL ?>/pages/notifikasi/index.php"
             class="sidebar-link <?= $currentPage === 'notifikasi' ? 'active' : '' ?>">
             <i class="bi bi-bell w-5 text-center text-base"></i>
@@ -88,6 +106,12 @@ $inisial   = strtoupper(substr($user['nama'] ?? 'U', 0, 1));
             class="sidebar-link <?= $currentPage === 'jadwal' ? 'active' : '' ?>">
             <i class="bi bi-calendar3 w-5 text-center text-base"></i>
             <span>Jadwal Instalasi</span>
+        </a>
+
+        <a href="<?= BASE_URL ?>/pages/proyek/gantt.php"
+            class="sidebar-link <?= $currentPage === 'gantt' ? 'active' : '' ?>">
+            <i class="bi bi-calendar-range w-5 text-center text-base"></i>
+            <span>Gantt Chart</span>
         </a>
         <?php endif; ?>
 
@@ -132,6 +156,15 @@ $inisial   = strtoupper(substr($user['nama'] ?? 'U', 0, 1));
             <span>Penggunaan Material</span>
         </a>
         <?php endif; ?>
+
+        <!-- Akun -->
+        <p class="px-3 pt-5 pb-2 text-[10px] font-bold uppercase tracking-widest sidebar-section">Akun</p>
+        <a href="<?= BASE_URL ?>/pages/profil/index.php"
+            class="sidebar-link <?= $currentPage === 'profil' ? 'active' : '' ?>">
+            <i class="bi bi-person-circle w-5 text-center text-base"></i>
+            <span>Profil Saya</span>
+        </a>
+
     </nav>
 
     <!-- Logout -->
@@ -148,33 +181,49 @@ $inisial   = strtoupper(substr($user['nama'] ?? 'U', 0, 1));
 
 <!-- Main Content -->
 <div class="flex-1 flex flex-col overflow-hidden">
+    <!-- Overlay mobile -->
+    <div id="sidebarOverlay" onclick="closeSidebar()"></div>
+
     <!-- Topbar -->
-    <header class="bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-6 py-3.5 flex items-center justify-between flex-shrink-0 sticky top-0 z-10">
+    <header class="bg-white border-b border-slate-100 px-4 lg:px-6 py-3.5 flex items-center justify-between flex-shrink-0">
         <div class="flex items-center gap-3">
-            <h1 class="text-base font-bold text-slate-800 tracking-tight"><?= $pageTitle ?? 'Dashboard' ?></h1>
-            <span class="hidden md:inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-400 bg-slate-100 rounded-full px-2.5 py-1">
-                <i class="bi bi-calendar3"></i> <?= date('d M Y') ?>
-            </span>
+            <!-- Hamburger mobile -->
+            <button onclick="openSidebar()" class="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors">
+                <i class="bi bi-list text-xl text-slate-600"></i>
+            </button>
+            <h1 class="text-base font-semibold text-slate-800 hidden sm:block"><?= $pageTitle ?? 'Dashboard' ?></h1>
         </div>
+
         <div class="flex items-center gap-2">
+            <!-- Search Global -->
+            <div class="relative hidden md:block" id="searchContainer">
+                <div class="relative">
+                    <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" id="globalSearch"
+                        placeholder="Cari proyek, pelanggan..."
+                        class="w-56 pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all focus:w-72"
+                        autocomplete="off">
+                </div>
+                <div id="searchDropdown" class="hidden"></div>
+            </div>
+
+            <!-- Notifikasi -->
             <a href="<?= BASE_URL ?>/pages/notifikasi/index.php"
-                class="relative p-2.5 rounded-xl hover:bg-slate-100 transition-colors group">
-                <i class="bi bi-bell text-slate-500 text-lg group-hover:text-primary-600 transition-colors"></i>
+                class="relative p-2 rounded-lg hover:bg-slate-100 transition-colors">
+                <i class="bi bi-bell text-slate-500 text-lg"></i>
                 <?php if ($notifCount > 0): ?>
-                <span class="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
-                    <?= $notifCount > 9 ? '9+' : $notifCount ?>
-                </span>
+                <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" id="notifDot"></span>
                 <?php endif; ?>
             </a>
-            <div class="w-px h-6 bg-slate-200 mx-1"></div>
-            <div class="flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-xl hover:bg-slate-50 transition-colors">
-                <div class="w-8 h-8 rounded-full bg-gradient-to-br <?= $roleColor ?> flex items-center justify-center text-white font-bold text-xs shadow-sm">
-                    <?= $inisial ?>
+
+            <div class="w-px h-6 bg-slate-200"></div>
+
+            <!-- User -->
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full <?= $roleColor ?> flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                    <?= strtoupper(substr($user['nama'] ?? 'U', 0, 1)) ?>
                 </div>
-                <div class="hidden sm:block leading-tight">
-                    <span class="text-sm font-semibold text-slate-700 block"><?= sanitize($user['nama'] ?? '') ?></span>
-                    <span class="text-[11px] text-slate-400"><?= $roleLabel ?></span>
-                </div>
+                <span class="text-sm font-medium text-slate-700 hidden sm:block"><?= sanitize($user['nama'] ?? '') ?></span>
             </div>
         </div>
     </header>

@@ -42,5 +42,7 @@ if (isAdmin()) {
 $namaProyek = trim($_POST['nama_proyek'] ?? $proyek['nama_proyek']);
 kirimNotifikasiKeRole('admin', 'Proyek Diperbarui', "Proyek \"$namaProyek\" telah diperbarui.");
 
+require_once __DIR__ . '/../../includes/activity.php';
+logActivity('update_proyek', 'update', "Memperbarui proyek: " . ($proyek['nama_proyek'] ?? ''), 'proyek');
 setFlash('success', 'Proyek berhasil diperbarui.');
 redirect(BASE_URL . '/pages/proyek/show.php?id=' . $id);

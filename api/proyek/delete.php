@@ -13,5 +13,7 @@ if (!$id) { setFlash('error', 'ID tidak valid.'); redirect(BASE_URL . '/pages/pr
 $stmt = db()->prepare("DELETE FROM proyek WHERE id = ?");
 $stmt->execute([$id]);
 
+require_once __DIR__ . '/../../includes/activity.php';
+logActivity('delete_proyek', 'delete', "Menghapus proyek ID: $id", 'proyek');
 setFlash('success', 'Proyek berhasil dihapus.');
 redirect(BASE_URL . '/pages/proyek/index.php');

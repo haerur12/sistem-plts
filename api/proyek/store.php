@@ -40,5 +40,7 @@ $namaProyek = $proyek->fetchColumn();
 
 kirimNotifikasiKeRole('manajer_proyek', 'Proyek Baru Ditambahkan', "Proyek \"$namaProyek\" telah ditambahkan ke sistem.");
 
+require_once __DIR__ . '/../../includes/activity.php';
+logActivity('create_proyek', 'create', "Membuat proyek baru: " . trim($_POST['nama_proyek']), 'proyek');
 setFlash('success', 'Proyek berhasil ditambahkan.');
 redirect(BASE_URL . '/pages/proyek/index.php');

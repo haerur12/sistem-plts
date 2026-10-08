@@ -60,5 +60,7 @@ $namaProyek = $proyekStmt->fetchColumn();
 kirimNotifikasiKeRole('manajer_proyek', 'Laporan Lapangan Baru', "Teknisi {$user['nama']} mengunggah laporan baru untuk proyek \"$namaProyek\".");
 kirimNotifikasiKeRole('admin', 'Laporan Lapangan Baru', "Laporan baru diunggah untuk proyek \"$namaProyek\".");
 
+require_once __DIR__ . '/../../includes/activity.php';
+logActivity('upload_laporan', 'create', "Mengunggah laporan: " . trim($_POST['judul_laporan']), 'laporan');
 setFlash('success', 'Laporan berhasil diunggah.');
 redirect(BASE_URL . '/pages/laporan/index.php');
