@@ -63,6 +63,22 @@ include __DIR__ . '/../../includes/sidebar.php';
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
+                        <label class="form-label">Latitude</label>
+                        <input type="number" name="latitude" class="form-input" step="any" min="-90" max="90"
+                            value="<?= $proyek['latitude'] !== null ? sanitize((string)$proyek['latitude']) : '' ?>"
+                            placeholder="-6.2088">
+                    </div>
+                    <div>
+                        <label class="form-label">Longitude</label>
+                        <input type="number" name="longitude" class="form-input" step="any" min="-180" max="180"
+                            value="<?= $proyek['longitude'] !== null ? sanitize((string)$proyek['longitude']) : '' ?>"
+                            placeholder="106.8456">
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 -mt-3">Isi kedua koordinat agar lokasi proyek dapat ditampilkan di peta.</p>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
                         <label class="form-label">Tanggal Mulai</label>
                         <input type="date" name="tanggal_mulai" class="form-input" value="<?= $proyek['tanggal_mulai'] ?>" required>
                     </div>

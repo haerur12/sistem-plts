@@ -49,6 +49,8 @@ include __DIR__ . '/../../includes/sidebar.php';
                         placeholder="Alamat lengkap lokasi proyek" required></textarea>
                 </div>
 
+
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="form-label">Tanggal Mulai <span class="text-red-500">*</span></label>
@@ -59,6 +61,22 @@ include __DIR__ . '/../../includes/sidebar.php';
                         <input type="date" name="tanggal_selesai" class="form-input" required>
                     </div>
                 </div>
+
+                <?php if (isAdmin()): ?>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Latitude <span class="text-xs text-slate-400 font-normal">(opsional)</span></label>
+                        <input type="number" step="0.00000001" name="latitude" class="form-input" 
+                            placeholder="-6.20880000">
+                        <p class="text-xs text-slate-400 mt-1">Koordinat GPS untuk peta</p>
+                    </div>
+                    <div>
+                        <label class="form-label">Longitude <span class="text-xs text-slate-400 font-normal">(opsional)</span></label>
+                        <input type="number" step="0.00000001" name="longitude" class="form-input" 
+                            placeholder="106.84560000">
+                    </div>
+                </div>
+                <?php endif; ?>
 
                 <div>
                     <label class="form-label">Deskripsi</label>

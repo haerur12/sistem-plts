@@ -16,8 +16,38 @@ $cek->execute([$id]);
 $proyek = $cek->fetch();
 if (!$proyek) { setFlash('error', 'Proyek tidak ditemukan.'); redirect(BASE_URL . '/pages/proyek/index.php'); }
 
-// Admin bisa edit semua field, Manajer hanya status dan progres
-if (isAdmin()) {
+// Deteksi apakah ini quick update (hanya status & progres) atau full update
+$isQuickUpdate = !isset($_POST['pelanggan_id']) && !isset($_POST['nama_proyek']);
+
+if ($isQuickUpdate) {
+    // Quick update: hanya status dan progres
+    $stmt = db()->prepare("UPDATE proyek SET status=?, progres=? WHERE id=?");
+    $stmt->execute([
+        $_POST['status'] ?? $proyek['status'],
+        (int)($_POST['progres'] ?? $proyek['progres']),
+        $id
+    ]);
+    $namaProyek = $proyek['nama_proyek'];
+} else {
+    // Full update: semua field (hanya admin)
+    if (!isAdmin()) {
+        setFlash('error', 'Anda tidak memiliki izin untuk mengedit semua field.');
+        redirect(BASE_URL . '/pages/proyek/show.php?id=' . $id);
+    }
+    
+    // Validasi field wajib
+    foreach (['pelanggan_id','nama_proyek','lokasi','tanggal_mulai','tanggal_selesai'] as $f) {
+        if (empty($_POST[$f])) {
+            setFlash('error', 'Field ' . str_replace('_', ' ', $f) . ' wajib diisi.');
+            redirect(BASE_URL . '/pages/proyek/edit.php?id=' . $id);
+        }
+    }
+    
+    if ($_POST['tanggal_selesai'] <= $_POST['tanggal_mulai']) {
+        setFlash('error', 'Tanggal selesai harus setelah tanggal mulai.');
+        redirect(BASE_URL . '/pages/proyek/edit.php?id=' . $id);
+    }
+    
     $stmt = db()->prepare("
         UPDATE proyek SET pelanggan_id=?, nama_proyek=?, lokasi=?, tanggal_mulai=?,
         tanggal_selesai=?, status=?, progres=?, deskripsi=?
@@ -34,15 +64,11 @@ if (isAdmin()) {
         trim($_POST['deskripsi'] ?? ''),
         $id,
     ]);
-} else {
-    $stmt = db()->prepare("UPDATE proyek SET status=?, progres=? WHERE id=?");
-    $stmt->execute([$_POST['status'], (int)$_POST['progres'], $id]);
+    $namaProyek = trim($_POST['nama_proyek']);
 }
 
-$namaProyek = trim($_POST['nama_proyek'] ?? $proyek['nama_proyek']);
+// Kirim notifikasi
 kirimNotifikasiKeRole('admin', 'Proyek Diperbarui', "Proyek \"$namaProyek\" telah diperbarui.");
 
-require_once __DIR__ . '/../../includes/activity.php';
-logActivity('update_proyek', 'update', "Memperbarui proyek: " . ($proyek['nama_proyek'] ?? ''), 'proyek');
 setFlash('success', 'Proyek berhasil diperbarui.');
 redirect(BASE_URL . '/pages/proyek/show.php?id=' . $id);

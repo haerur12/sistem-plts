@@ -37,6 +37,10 @@ $pageTitle = 'Login';
     </script>
     <style type="text/tailwindcss">
         .login-input { @apply w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm placeholder:text-slate-400 bg-slate-50/60 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 transition-all; }
+        .login-bg { @apply bg-primary-900; }
+        .login-grid { background-image: radial-gradient(rgba(255,255,255,0.15) 1px, transparent 1px); background-size: 24px 24px; }
+        .shadow-card { box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08); }
+        .glass { @apply bg-white/10 backdrop-blur-md border border-white/20; }
     </style>
 </head>
 <body class="font-sans antialiased">

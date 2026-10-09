@@ -20,14 +20,31 @@ if ($_POST['tanggal_selesai'] <= $_POST['tanggal_mulai']) {
     redirect(BASE_URL . '/pages/proyek/create.php');
 }
 
+$latitude = trim($_POST['latitude'] ?? '');
+$longitude = trim($_POST['longitude'] ?? '');
+if (($latitude === '') !== ($longitude === '')) {
+    setFlash('error', 'Latitude dan longitude harus diisi bersama.');
+    redirect(BASE_URL . '/pages/proyek/create.php');
+}
+if ($latitude !== '' && (
+    !is_numeric($latitude) || !is_numeric($longitude)
+    || (float)$latitude < -90 || (float)$latitude > 90
+    || (float)$longitude < -180 || (float)$longitude > 180
+)) {
+    setFlash('error', 'Koordinat tidak valid.');
+    redirect(BASE_URL . '/pages/proyek/create.php');
+}
+
 $stmt = db()->prepare("
-    INSERT INTO proyek (pelanggan_id, nama_proyek, lokasi, tanggal_mulai, tanggal_selesai, deskripsi)
-    VALUES (?, ?, ?, ?, ?, ?)
+INSERT INTO proyek (pelanggan_id, nama_proyek, lokasi, latitude, longitude, tanggal_mulai, tanggal_selesai, deskripsi)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 ");
 $stmt->execute([
     (int)$_POST['pelanggan_id'],
     trim($_POST['nama_proyek']),
     trim($_POST['lokasi']),
+    !empty($_POST['latitude']) ? $_POST['latitude'] : null,
+    !empty($_POST['longitude']) ? $_POST['longitude'] : null,
     $_POST['tanggal_mulai'],
     $_POST['tanggal_selesai'],
     trim($_POST['deskripsi'] ?? ''),
