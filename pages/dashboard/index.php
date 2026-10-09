@@ -13,6 +13,414 @@ $db   = db();
 $user = currentUser();
 $isAdmin = isAdmin();
 
+if (isGudang()) {
+
+    $db   = db();
+    $user = currentUser();
+
+    // Statistik utama
+    $totalKomponen  = (int)$db->query("SELECT COUNT(*) FROM komponen")->fetchColumn();
+    $stokAman       = (int)$db->query("SELECT COUNT(*) FROM komponen WHERE stok_tersedia > stok_minimum * 1.5")->fetchColumn();
+    $stokRendah     = (int)$db->query("SELECT COUNT(*) FROM komponen WHERE stok_tersedia > stok_minimum AND stok_tersedia <= stok_minimum * 1.5")->fetchColumn();
+    $stokKritis     = (int)$db->query("SELECT COUNT(*) FROM komponen WHERE stok_tersedia > 0 AND stok_tersedia <= stok_minimum")->fetchColumn();
+    $stokHabis      = (int)$db->query("SELECT COUNT(*) FROM komponen WHERE stok_tersedia = 0")->fetchColumn();
+
+    // Penggunaan hari ini
+    $penggunaanHariIni = (int)$db->query("SELECT COUNT(*) FROM penggunaan_material WHERE DATE(created_at) = CURDATE()")->fetchColumn();
+
+    // Penggunaan bulan ini
+    $penggunaanBulanIni = (int)$db->query("SELECT COUNT(*) FROM penggunaan_material WHERE MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())")->fetchColumn();
+
+    // Komponen kritis & habis
+    $komponenKritis = $db->query("
+        SELECT * FROM komponen
+        WHERE stok_tersedia <= stok_minimum
+        ORDER BY stok_tersedia ASC
+    ")->fetchAll();
+
+    // Top 5 komponen paling sering dipakai bulan ini
+    $topKomponen = $db->query("
+        SELECT k.nama_komponen, k.satuan, k.kategori,
+               SUM(pm.jumlah_digunakan) as total_digunakan
+        FROM penggunaan_material pm
+        JOIN komponen k ON pm.komponen_id = k.id
+        WHERE MONTH(pm.created_at) = MONTH(CURDATE())
+        GROUP BY pm.komponen_id, k.nama_komponen, k.satuan, k.kategori
+        ORDER BY total_digunakan DESC
+        LIMIT 5
+    ")->fetchAll();
+
+    // Penggunaan terbaru
+    $penggunaanTerbaru = $db->query("
+        SELECT pm.*, k.nama_komponen, k.satuan, p.nama_proyek, u.nama as nama_user
+        FROM penggunaan_material pm
+        JOIN komponen k ON pm.komponen_id = k.id
+        JOIN proyek p ON pm.proyek_id = p.id
+        JOIN users u ON pm.user_id = u.id
+        ORDER BY pm.created_at DESC
+        LIMIT 5
+    ")->fetchAll();
+
+    // Chart stok per kategori
+    $chartKategori = $db->query("
+        SELECT kategori,
+               SUM(stok_tersedia) as total_stok,
+               COUNT(*) as jumlah_item
+        FROM komponen
+        GROUP BY kategori
+        ORDER BY total_stok DESC
+    ")->fetchAll();
+
+    // Chart penggunaan 7 hari terakhir
+    $chartPenggunaan = $db->query("
+        SELECT DATE_FORMAT(created_at,'%d/%m') as tgl,
+               COUNT(*) as transaksi,
+               SUM(jumlah_digunakan) as total_unit
+        FROM penggunaan_material
+        WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+        GROUP BY DATE(created_at), DATE_FORMAT(created_at,'%d/%m')
+        ORDER BY DATE(created_at) ASC
+    ")->fetchAll();
+
+    // Notif belum dibaca
+    $notifCount = countNotifBelumDibaca($user['id']);
+
+    include __DIR__ . '/../../includes/header.php';
+    include __DIR__ . '/../../includes/sidebar.php';
+    ?>
+
+<!-- HEADER -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <?php
+        $jam = (int)date('H');
+        $greeting = $jam < 11 ? 'Selamat pagi' : ($jam < 15 ? 'Selamat siang' : ($jam < 18 ? 'Selamat sore' : 'Selamat malam'));
+        ?>
+        <h2 class="text-xl font-bold text-slate-800"><?= $greeting ?>, <?= sanitize(explode(' ',$user['nama'])[0]) ?>! 🏭</h2>
+        <p class="text-sm text-slate-400 mt-0.5">
+            <?= date('l, d F Y') ?>
+            <?php if ($stokKritis + $stokHabis > 0): ?>
+            · <span class="text-red-500 font-semibold animate-pulse">⚠️ <?= $stokKritis + $stokHabis ?> komponen perlu perhatian</span>
+            <?php else: ?>
+            · <span class="text-green-600 font-medium">✅ Semua stok dalam kondisi aman</span>
+            <?php endif; ?>
+        </p>
+    </div>
+    <div class="flex gap-2">
+        <a href="<?= BASE_URL ?>/pages/material/create.php" class="btn-secondary btn-sm">
+            <i class="bi bi-arrow-left-right"></i> Catat Penggunaan
+        </a>
+        <a href="<?= BASE_URL ?>/pages/komponen/create.php" class="btn-primary btn-sm">
+            <i class="bi bi-plus-lg"></i> Tambah Komponen
+        </a>
+    </div>
+</div>
+
+<!-- ALERT STOK HABIS -->
+<?php if ($stokHabis > 0): ?>
+<div class="bg-red-50 border border-red-200 rounded-xl px-5 py-4 mb-5 flex items-start gap-3">
+    <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+        <i class="bi bi-exclamation-triangle-fill text-red-500 text-lg"></i>
+    </div>
+    <div>
+        <h4 class="text-sm font-semibold text-red-800">
+            <?= $stokHabis ?> Komponen Stok Habis!
+        </h4>
+        <p class="text-xs text-red-600 mt-0.5">
+            Segera lakukan pengisian stok untuk komponen yang sudah habis agar tidak mengganggu jadwal instalasi.
+        </p>
+    </div>
+    <a href="<?= BASE_URL ?>/pages/komponen/index.php" class="ml-auto btn-danger btn-sm flex-shrink-0">
+        Kelola Stok
+    </a>
+</div>
+<?php endif; ?>
+
+<!-- STAT CARDS -->
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+    <?php
+    $cards = [
+        ['val'=>$totalKomponen,  'label'=>'Total Komponen', 'icon'=>'bi-grid-3x3-gap',           'bg'=>'bg-slate-700',   'border'=>'border-slate-200'],
+        ['val'=>$stokAman,       'label'=>'Stok Aman',      'icon'=>'bi-check-circle-fill',       'bg'=>'bg-green-500',   'border'=>'border-green-200'],
+        ['val'=>$stokRendah,     'label'=>'Stok Rendah',    'icon'=>'bi-dash-circle-fill',        'bg'=>'bg-amber-500',   'border'=>'border-amber-200'],
+        ['val'=>$stokKritis,     'label'=>'Stok Kritis',    'icon'=>'bi-exclamation-circle-fill', 'bg'=>'bg-orange-500',  'border'=>'border-orange-200'],
+        ['val'=>$stokHabis,      'label'=>'Stok Habis',     'icon'=>'bi-x-circle-fill',           'bg'=>'bg-red-500',     'border'=>'border-red-200'],
+    ];
+    foreach ($cards as $c): ?>
+    <div class="card p-4 border <?= $c['border'] ?> card-hover <?= ($c['val'] > 0 && in_array($c['label'],['Stok Kritis','Stok Habis'])) ? 'stok-kritis-pulse' : '' ?>">
+        <div class="w-9 h-9 <?= $c['bg'] ?> rounded-xl flex items-center justify-center mb-3 shadow-sm">
+            <i class="bi <?= $c['icon'] ?> text-white"></i>
+        </div>
+        <div class="text-2xl font-bold text-slate-800"><?= $c['val'] ?></div>
+        <div class="text-xs text-slate-500 mt-0.5"><?= $c['label'] ?></div>
+    </div>
+    <?php endforeach; ?>
+</div>
+
+<!-- CHARTS -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+
+    <!-- Chart Penggunaan 7 Hari -->
+    <div class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <i class="bi bi-graph-up text-primary-600"></i>
+                Penggunaan 7 Hari Terakhir
+            </h3>
+            <span class="text-xs text-slate-400"><?= $penggunaanBulanIni ?> transaksi bulan ini</span>
+        </div>
+        <div style="height:180px">
+            <canvas id="chartPenggunaan"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart Stok Per Kategori -->
+    <div class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <i class="bi bi-pie-chart text-purple-600"></i>
+                Distribusi Stok Per Kategori
+            </h3>
+        </div>
+        <div class="flex items-center gap-4">
+            <div style="height:160px;width:160px;flex-shrink:0">
+                <canvas id="chartKategori"></canvas>
+            </div>
+            <div class="flex-1 space-y-2">
+                <?php
+                $colors = ['#1a237e','#1565c0','#0277bd','#00695c','#2e7d32','#558b2f','#f9a825','#e65100','#6a1b9a'];
+                foreach ($chartKategori as $i => $k):
+                    $color = $colors[$i % count($colors)];
+                ?>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:<?= $color ?>"></div>
+                        <span class="text-xs text-slate-600 truncate"><?= sanitize($k['kategori']) ?></span>
+                    </div>
+                    <span class="text-xs font-semibold text-slate-700"><?= $k['total_stok'] ?></span>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- KOMPONEN KRITIS + TOP PENGGUNAAN + TERBARU -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+    <!-- Komponen Kritis -->
+    <div class="card overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-50 flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <i class="bi bi-exclamation-triangle text-red-500"></i>
+                Perlu Perhatian
+            </h3>
+            <a href="<?= BASE_URL ?>/pages/komponen/index.php" class="text-xs text-primary-700 font-medium hover:text-primary-900">
+                Kelola <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+        <?php if (empty($komponenKritis)): ?>
+        <div class="px-5 py-10 text-center">
+            <i class="bi bi-check-circle text-4xl text-green-300 block mb-2"></i>
+            <p class="text-sm text-slate-400">Semua stok aman!</p>
+        </div>
+        <?php else: ?>
+        <div class="divide-y divide-slate-50">
+            <?php foreach ($komponenKritis as $k):
+                [$cls, $label, $statusKey] = stokStatus($k['stok_tersedia'], $k['stok_minimum']);
+                $pct = $k['stok_minimum'] > 0 ? min(100, round($k['stok_tersedia'] / $k['stok_minimum'] * 100)) : 0;
+                $barColor = $statusKey === 'habis' ? 'bg-slate-400' : ($statusKey === 'kritis' ? 'bg-red-500' : 'bg-amber-500');
+            ?>
+            <div class="px-5 py-3.5">
+                <div class="flex items-start justify-between gap-2 mb-1.5">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-semibold text-slate-800 leading-tight truncate">
+                            <?= sanitize($k['nama_komponen']) ?>
+                        </p>
+                        <p class="text-xs text-slate-400"><?= sanitize($k['kategori']) ?></p>
+                    </div>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium <?= $cls ?> flex-shrink-0">
+                        <?= $label ?>
+                    </span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div class="h-full <?= $barColor ?> rounded-full" style="width:<?= $pct ?>%"></div>
+                    </div>
+                    <span class="text-xs font-semibold <?= $statusKey==='habis' ? 'text-slate-500' : 'text-red-600' ?>">
+                        <?= $k['stok_tersedia'] ?> / <?= $k['stok_minimum'] ?>
+                    </span>
+                </div>
+                <!-- Quick Update Stok -->
+                <div class="mt-2">
+                    <a href="<?= BASE_URL ?>/pages/komponen/edit.php?id=<?= $k['id'] ?>"
+                        class="text-xs text-primary-600 hover:text-primary-800 font-medium flex items-center gap-1">
+                        <i class="bi bi-plus-circle"></i> Update Stok
+                    </a>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- Top Komponen Dipakai -->
+    <div class="card overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-50">
+            <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <i class="bi bi-trophy text-amber-500"></i>
+                Paling Banyak Dipakai
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">Bulan <?= date('F Y') ?></p>
+        </div>
+        <?php if (empty($topKomponen)): ?>
+        <div class="px-5 py-10 text-center">
+            <i class="bi bi-inbox text-4xl text-slate-200 block mb-2"></i>
+            <p class="text-sm text-slate-400">Belum ada penggunaan bulan ini</p>
+        </div>
+        <?php else: ?>
+        <div class="divide-y divide-slate-50">
+            <?php
+            $maxVal = max(array_column($topKomponen, 'total_digunakan'));
+            foreach ($topKomponen as $i => $k):
+                $pct = $maxVal > 0 ? round($k['total_digunakan'] / $maxVal * 100) : 0;
+                $medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+            ?>
+            <div class="px-5 py-3.5">
+                <div class="flex items-start gap-3">
+                    <span class="text-lg flex-shrink-0 mt-0.5"><?= $medals[$i] ?></span>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-2 mb-1.5">
+                            <p class="text-xs font-semibold text-slate-800 truncate">
+                                <?= sanitize($k['nama_komponen']) ?>
+                            </p>
+                            <span class="text-xs font-bold text-primary-700 flex-shrink-0">
+                                <?= $k['total_digunakan'] ?> <?= sanitize($k['satuan']) ?>
+                            </span>
+                        </div>
+                        <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-primary-600 rounded-full transition-all" style="width:<?= $pct ?>%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- Penggunaan Terbaru -->
+    <div class="card overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-50 flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <i class="bi bi-clock-history text-blue-500"></i>
+                Penggunaan Terbaru
+            </h3>
+            <a href="<?= BASE_URL ?>/pages/material/index.php" class="text-xs text-primary-700 font-medium hover:text-primary-900">
+                Semua <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+        <?php if (empty($penggunaanTerbaru)): ?>
+        <div class="px-5 py-10 text-center">
+            <i class="bi bi-inbox text-4xl text-slate-200 block mb-2"></i>
+            <p class="text-sm text-slate-400">Belum ada catatan penggunaan</p>
+        </div>
+        <?php else: ?>
+        <div class="divide-y divide-slate-50">
+            <?php foreach ($penggunaanTerbaru as $pm): ?>
+            <div class="px-5 py-3.5">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-semibold text-slate-800 truncate">
+                            <?= sanitize($pm['nama_komponen']) ?>
+                        </p>
+                        <p class="text-xs text-slate-400 truncate mt-0.5">
+                            <?= sanitize($pm['nama_proyek']) ?>
+                        </p>
+                        <p class="text-xs text-slate-300 mt-0.5"><?= timeAgo($pm['created_at']) ?></p>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <span class="text-sm font-bold text-red-500">
+                            -<?= $pm['jumlah_digunakan'] ?>
+                        </span>
+                        <span class="text-xs text-slate-400"> <?= sanitize($pm['satuan']) ?></span>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+<script>
+// Chart Penggunaan 7 Hari
+const chartPData = <?= json_encode([
+    'labels'     => array_column($chartPenggunaan, 'tgl'),
+    'transaksi'  => array_column($chartPenggunaan, 'transaksi'),
+    'total_unit' => array_column($chartPenggunaan, 'total_unit'),
+]) ?>;
+
+const ctxP = document.getElementById('chartPenggunaan');
+if (ctxP) {
+    new Chart(ctxP, {
+        type: 'bar',
+        data: {
+            labels: chartPData.labels,
+            datasets: [{
+                label: 'Transaksi',
+                data: chartPData.transaksi,
+                backgroundColor: 'rgba(26,35,126,0.15)',
+                borderColor: '#1a237e',
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize:1, font:{size:11} }, grid: { color:'rgba(0,0,0,.04)' } },
+                x: { ticks: { font:{size:11} }, grid: { display:false } }
+            }
+        }
+    });
+}
+
+// Chart Donut Stok Per Kategori
+const chartKData = <?= json_encode([
+    'labels' => array_column($chartKategori, 'kategori'),
+    'data'   => array_column($chartKategori, 'total_stok'),
+]) ?>;
+const colors = ['#1a237e','#1565c0','#0277bd','#00695c','#2e7d32','#558b2f','#f9a825','#e65100','#6a1b9a'];
+
+const ctxK = document.getElementById('chartKategori');
+if (ctxK) {
+    new Chart(ctxK, {
+        type: 'doughnut',
+        data: {
+            labels: chartKData.labels,
+            datasets: [{
+                data: chartKData.data,
+                backgroundColor: colors.slice(0, chartKData.labels.length),
+                borderWidth: 0,
+                hoverOffset: 4,
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, cutout: '65%',
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+</script>
+
+    <?php
+    include __DIR__ . '/../../includes/footer.php';
+    exit;
+}
+
 // ============ STATISTIK DASAR ============
 $totalProyek    = (int) $db->query("SELECT COUNT(*) FROM proyek")->fetchColumn();
 $proyekAktif    = (int) $db->query("SELECT COUNT(*) FROM proyek WHERE status IN ('survei','perencanaan','instalasi')")->fetchColumn();
