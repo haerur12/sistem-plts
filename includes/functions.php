@@ -87,3 +87,17 @@ function countNotifBelumDibaca(int $userId): int {
     $stmt->execute([$userId]);
     return (int) $stmt->fetchColumn();
 }
+
+function csrfField(): string {
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return '<input type="hidden" name="csrf_token" value="' . sanitize($_SESSION['csrf_token']) . '">';
+}
+
+function verifyCsrfToken(): bool {
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    $token = $_POST['csrf_token'] ?? '';
+    return !empty($token) && hash_equals($_SESSION['csrf_token'] ?? '', $token);
+}
