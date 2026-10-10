@@ -1,43 +1,66 @@
 <?php
-// api/komponen/update-stok.php
+// api/komponen/update.php
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../includes/csrf.php';
+require_once __DIR__ . '/../../includes/activity.php';
+requireRole(['admin', 'gudang']);
 
-header('Content-Type: application/json');
-requireRole(['admin','gudang']);
+$id = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT);
+$stok = filter_var($_POST['stok_tersedia'] ?? null, FILTER_VALIDATE_INT);
+$stokMinimum = filter_var($_POST['stok_minimum'] ?? null, FILTER_VALIDATE_INT);
+$namaInput = $_POST['nama_komponen'] ?? '';
+$nama = is_string($namaInput) ? trim($namaInput) : '';
+$kategori = $_POST['kategori'] ?? '';
+$satuan = $_POST['satuan'] ?? '';
+$kategoriValid = ['Panel Surya', 'Inverter', 'Baterai', 'Kabel', 'Mounting', 'Proteksi', 'Monitoring', 'Lainnya'];
+$satuanValid = ['unit', 'buah', 'meter', 'set', 'rol', 'lembar', 'kg'];
 
-$id   = (int)($_POST['id']            ?? 0);
-$stok = (int)($_POST['stok_tersedia'] ?? -1);
-
-if (!$id || $stok < 0) {
-    echo json_encode(['success'=>false, 'message'=>'Data tidak valid']);
-    exit;
+if (!verifyCsrf()) {
+    setFlash('error', 'Token keamanan tidak valid. Silakan refresh halaman dan coba lagi.');
+    redirect(BASE_URL . '/pages/komponen/index.php');
 }
 
-$db   = db();
-$cek  = $db->prepare("SELECT * FROM komponen WHERE id = ?");
-$cek->execute([$id]);
-$k    = $cek->fetch();
-
-if (!$k) {
-    echo json_encode(['success'=>false, 'message'=>'Komponen tidak ditemukan']);
-    exit;
+if ($id === false || $id === null || $id < 1 ||
+    $stok === false || $stok === null || $stok < 0 ||
+    $stokMinimum === false || $stokMinimum === null || $stokMinimum < 0 ||
+    $nama === '' || !is_string($kategori) || !in_array($kategori, $kategoriValid, true) ||
+    !is_string($satuan) || !in_array($satuan, $satuanValid, true)) {
+    setFlash('error', 'Data komponen tidak valid.');
+    redirect(BASE_URL . '/pages/komponen/index.php');
 }
 
-$db->prepare("UPDATE komponen SET stok_tersedia = ? WHERE id = ?")
-   ->execute([$stok, $id]);
-
-// Kirim notif jika stok kritis
-if ($stok <= $k['stok_minimum']) {
-    kirimNotifikasiKeRole('admin', 'Peringatan Stok', "Stok \"{$k['nama_komponen']}\" diperbarui menjadi {$stok} {$k['satuan']} (minimum: {$k['stok_minimum']}).");
+$db = db();
+$stmt = $db->prepare('SELECT nama_komponen FROM komponen WHERE id = ?');
+$stmt->execute([$id]);
+$komponen = $stmt->fetch();
+if (!$komponen) {
+    setFlash('error', 'Komponen tidak ditemukan.');
+    redirect(BASE_URL . '/pages/komponen/index.php');
 }
 
-logActivity('UPDATE_STOK_INLINE', 'komponen', $id, "Stok diubah dari {$k['stok_tersedia']} ke {$stok}");
+$db->prepare("
+    UPDATE komponen
+    SET nama_komponen = ?, kategori = ?, satuan = ?, stok_tersedia = ?, stok_minimum = ?
+    WHERE id = ?
+")->execute([$nama, $kategori, $satuan, $stok, $stokMinimum, $id]);
 
-echo json_encode([
-    'success'      => true,
-    'stok_baru'    => $stok,
-    'status'       => stokStatus($stok, $k['stok_minimum'])[2],
-    'message'      => 'Stok berhasil diperbarui'
-]);
+if ($stok <= $stokMinimum) {
+    kirimNotifikasiKeRole(
+        'admin',
+        'Peringatan Stok',
+        "Stok \"{$nama}\" diperbarui menjadi {$stok} {$satuan} (minimum: {$stokMinimum})."
+    );
+}
+
+logActivity(
+    'update_komponen',
+    'update',
+    "Memperbarui komponen \"{$komponen['nama_komponen']}\"",
+    'komponen',
+    ['id' => $id, 'stok_baru' => $stok, 'stok_minimum' => $stokMinimum]
+);
+
+setFlash('success', 'Komponen berhasil diperbarui.');
+redirect(BASE_URL . '/pages/komponen/index.php');

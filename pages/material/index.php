@@ -47,6 +47,13 @@ $stmt = $db->prepare("
 ");
 $stmt->execute($params);
 $materials = $stmt->fetchAll();
+$exportQuery = http_build_query([
+    'search' => $search,
+    'kategori' => $kat,
+    'proyek_id' => $proyek,
+    'dari' => $dari,
+    'sampai' => $sampai,
+]);
 
 // Statistik bulan ini
 $statBulan = $db->query("
@@ -71,7 +78,7 @@ include __DIR__ . '/../../includes/sidebar.php';
         <p class="text-sm text-slate-400 mt-0.5"><?= $totalRows ?> total catatan</p>
     </div>
     <div class="flex gap-2">
-        <a href="<?= BASE_URL ?>/api/export/material-csv.php" class="btn-secondary btn-sm">
+        <a href="<?= BASE_URL ?>/api/export/material-csv.php?<?= sanitize($exportQuery) ?>" class="btn-secondary btn-sm">
             <i class="bi bi-download"></i> Export CSV
         </a>
         <a href="<?= BASE_URL ?>/pages/laporan/stok.php" class="btn-secondary btn-sm">

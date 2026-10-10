@@ -29,6 +29,7 @@ include __DIR__ . '/../../includes/sidebar.php';
     </div>
     <div class="card p-6">
         <form method="POST" action="<?= BASE_URL ?>/api/komponen/update.php">
+            <?= csrfField() ?>
             <input type="hidden" name="id" value="<?= $id ?>">
             <div class="space-y-4">
                 <div>

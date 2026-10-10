@@ -1,6 +1,7 @@
 <?php
-$pageTitle   = 'Komponen PLTS';
-$currentPage = 'komponen';
+$isStatusView = ($_GET['view'] ?? '') === 'status';
+$pageTitle   = $isStatusView ? 'Status Material' : 'Komponen PLTS';
+$currentPage = $isStatusView ? 'status-material' : 'komponen';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/auth.php';
@@ -19,10 +20,9 @@ if ($search) { $where[] = 'nama_komponen LIKE ?'; $params[] = "%$search%"; }
 if ($kat)    { $where[] = 'kategori = ?';          $params[] = $kat; }
 $whereStr = implode(' AND ', $where);
 
-$totalRows  = (int)$db->prepare("SELECT COUNT(*) FROM komponen WHERE $whereStr")->execute($params) ? 0 : 0;
-$cntStmt    = $db->prepare("SELECT COUNT(*) FROM komponen WHERE $whereStr");
+$cntStmt = $db->prepare("SELECT COUNT(*) FROM komponen WHERE $whereStr");
 $cntStmt->execute($params);
-$totalRows  = (int)$cntStmt->fetchColumn();
+$totalRows = (int)$cntStmt->fetchColumn();
 $totalPages = ceil($totalRows / $perPage);
 
 $stmt = $db->prepare("SELECT * FROM komponen WHERE $whereStr ORDER BY kategori, nama_komponen LIMIT $perPage OFFSET $offset");
@@ -413,7 +413,7 @@ function saveStok(id) {
     const fd = new FormData();
     fd.append('id', id);
     fd.append('stok_tersedia', val);
-    fd.append('_token', document.querySelector('input[name="_token"]')?.value || '');
+    fd.append('csrf_token', document.querySelector('input[name="csrf_token"]')?.value || '');
 
     fetch('<?= BASE_URL ?>/api/komponen/update-stok.php', { method:'POST', body: fd })
         .then(r => r.json())

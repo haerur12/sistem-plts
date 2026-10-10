@@ -155,6 +155,12 @@ $inisial   = strtoupper(substr($user['nama'] ?? 'U', 0, 1));
             <i class="bi bi-arrow-left-right w-5 text-center text-base"></i>
             <span>Penggunaan Material</span>
         </a>
+
+        <a href="<?= BASE_URL ?>/pages/laporan/stok.php"
+            class="sidebar-link <?= $currentPage === 'laporan-stok' ? 'active' : '' ?>">
+            <i class="bi bi-file-bar-graph w-5 text-center text-base"></i>
+            <span>Laporan Stok</span>
+        </a>
         <?php endif; ?>
 
         <!-- Akun -->
