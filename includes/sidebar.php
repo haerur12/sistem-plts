@@ -86,7 +86,7 @@ $inisial   = strtoupper(substr($user['nama'] ?? 'U', 0, 1));
             <?php endif; ?>
         </a>
 
-        <a href="<?= BASE_URL ?>/pages/komponen/index.php?view=status"
+        <a href="<?= BASE_URL ?>/pages/komponen/status.php"
             class="sidebar-link <?= $currentPage === 'status-material' ? 'active' : '' ?>">
             <i class="bi bi-boxes w-5 text-center text-base"></i>
             <span>Status Material</span>

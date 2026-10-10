@@ -1,7 +1,6 @@
 <?php
-$isStatusView = ($_GET['view'] ?? '') === 'status';
-$pageTitle   = $isStatusView ? 'Status Material' : 'Komponen PLTS';
-$currentPage = $isStatusView ? 'status-material' : 'komponen';
+$pageTitle   = 'Komponen PLTS';
+$currentPage = 'komponen';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/auth.php';
