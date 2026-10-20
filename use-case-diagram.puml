@@ -1,0 +1,132 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+    BackgroundColor     #AED6F1
+    BorderColor         #1A5276
+    FontColor           #1A2744
+    FontSize            12
+    FontName            Arial
+}
+skinparam actor {
+    BorderColor         #1A5276
+    FontColor           #1A2744
+    FontSize            11
+    FontName            Arial
+}
+skinparam arrow {
+    Color               #1A5276
+    FontColor           #1A5276
+    FontSize            10
+    FontName            Arial
+    FontStyle           italic
+}
+skinparam rectangle {
+    BorderColor         #1A5276
+    BorderThickness     2
+    FontColor           #1A2744
+    FontSize            14
+    FontName            Arial Bold
+    BackgroundColor     #FDFEFE
+}
+skinparam shadowing false
+
+left to right direction
+
+' =====================
+' ACTORS
+' =====================
+actor "Admin"             as Admin
+actor "Manajer Proyek"    as Manajer
+actor "Teknisi Lapangan"  as Teknisi
+actor "Gudang"            as Gudang
+
+' =====================
+' SYSTEM BOUNDARY
+' =====================
+rectangle "Use Case Sistem Informasi PLTS" {
+
+    ' --- USE CASE UTAMA ---
+    usecase "Login"                  as UC_Login
+    usecase "Kelola Pengguna"        as UC_Pengguna
+    usecase "Kelola Pelanggan"       as UC_Pelanggan
+    usecase "Kelola Proyek"          as UC_Proyek
+    usecase "Kelola Jadwal"          as UC_Jadwal
+    usecase "Kelola Komponen"        as UC_Komponen
+    usecase "Kelola Material Proyek" as UC_Material
+    usecase "Laporan Lapangan"       as UC_Laporan
+    usecase "Lihat Analitik"         as UC_Analitik
+    usecase "Lihat Notifikasi"       as UC_Notif
+
+    ' --- SUB USE CASE ---
+    usecase "Validasi Sesi"          as UC_Validasi
+    usecase "Gantt Chart"            as UC_Gantt
+    usecase "Kanban Board"           as UC_Kanban
+    usecase "Kalender Interaktif"    as UC_Kalender
+    usecase "Input Stok Masuk"       as UC_StokMasuk
+    usecase "Update Stok"            as UC_UpdateStok
+    usecase "Upload Foto"            as UC_Foto
+    usecase "Ekspor Data"            as UC_Ekspor
+
+    ' =====================
+    ' <<include>>
+    ' =====================
+    UC_Login    ..> UC_Validasi   : <<include>>
+    UC_Jadwal   ..> UC_Kalender   : <<include>>
+
+    ' =====================
+    ' <<extend>>
+    ' =====================
+    UC_Proyek   ..> UC_Gantt      : <<extend>>
+    UC_Proyek   ..> UC_Kanban     : <<extend>>
+    UC_Komponen ..> UC_StokMasuk  : <<extend>>
+    UC_Komponen ..> UC_UpdateStok : <<extend>>
+    UC_Laporan  ..> UC_Foto       : <<extend>>
+    UC_Analitik ..> UC_Ekspor     : <<extend>>
+}
+
+' =====================
+' ADMIN (akses penuh)
+' =====================
+Admin --> UC_Login
+Admin --> UC_Pengguna
+Admin --> UC_Pelanggan
+Admin --> UC_Proyek
+Admin --> UC_Jadwal
+Admin --> UC_Komponen
+Admin --> UC_Material
+Admin --> UC_Laporan
+Admin --> UC_Analitik
+Admin --> UC_Notif
+
+' =====================
+' MANAJER PROYEK
+' =====================
+Manajer --> UC_Login
+Manajer --> UC_Pelanggan
+Manajer --> UC_Proyek
+Manajer --> UC_Jadwal
+Manajer --> UC_Material
+Manajer --> UC_Laporan
+Manajer --> UC_Analitik
+Manajer --> UC_Notif
+
+' =====================
+' TEKNISI LAPANGAN
+' =====================
+Teknisi --> UC_Login
+Teknisi --> UC_Proyek
+Teknisi --> UC_Komponen
+Teknisi --> UC_Material
+Teknisi --> UC_Laporan
+Teknisi --> UC_Notif
+
+' =====================
+' GUDANG
+' =====================
+Gudang --> UC_Login
+Gudang --> UC_Komponen
+Gudang --> UC_Material
+Gudang --> UC_Notif
+
+@enduml

@@ -146,7 +146,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                 Catatan Lapangan
             </h3>
             <div class="bg-slate-50 rounded-xl p-4 text-sm text-slate-700 leading-relaxed whitespace-pre-line">
-                <?= display($laporan['deskripsi']) ?>
+                <?= sanitize($laporan['deskripsi']) ?>
             </div>
         </div>
 
@@ -216,7 +216,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 ?>
                                 <span class="text-xs px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-500"><?= $rl ?></span>
                             </div>
-                            <p class="text-sm text-slate-700 leading-relaxed"><?= display($k['komentar']) ?></p>
+                            <p class="text-sm text-slate-700 leading-relaxed whitespace-pre-line"><?= sanitize($k['komentar']) ?></p>
                         </div>
                         <p class="text-xs text-slate-400 mt-1 ml-2"><?= timeAgo($k['created_at']) ?></p>
                     </div>

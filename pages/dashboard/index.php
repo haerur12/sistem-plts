@@ -534,7 +534,7 @@ $sapaan = $jam < 11 ? 'Selamat pagi' : ($jam < 15 ? 'Selamat siang' : ($jam < 18
     </div>
 </div>
 
-<!-- ============ KPI CARDS dengan PERSEN NAIK/TURUN ============ -->
+<!-- ============ KPI CARDS MODERN ============ -->
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 <?php
 $kpi = [
@@ -577,22 +577,32 @@ $kpi = [
 ];
 foreach ($kpi as $k):
     $naik = $k['persen'] >= 0;
-    $warnaPersen = $naik ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50';
+    $warnaPersen = $naik ? 'text-emerald-700 bg-emerald-50' : 'text-red-700 bg-red-50';
     $iconPersen  = $naik ? 'bi-arrow-up-right' : 'bi-arrow-down-right';
 ?>
-<div class="card card-hover stat-card p-5" style="--stat-accent: <?= $k['accent'] ?>">
-    <div class="flex items-start justify-between mb-3">
-        <div class="w-11 h-11 <?= $k['light'] ?> rounded-xl flex items-center justify-center flex-shrink-0">
-            <i class="bi <?= $k['icon'] ?> text-lg"></i>
+<div class="card card-hover p-5 relative overflow-hidden group" style="--stat-accent: <?= $k['accent'] ?>">
+    <!-- Background gradient subtle -->
+    <div class="absolute top-0 right-0 w-32 h-32 opacity-5 group-hover:opacity-10 transition-opacity"
+         style="background: radial-gradient(circle, <?= $k['accent'] ?> 0%, transparent 70%);"></div>
+
+    <div class="relative flex items-start justify-between mb-4">
+        <div class="w-12 h-12 <?= $k['light'] ?> rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+            <i class="bi <?= $k['icon'] ?> text-xl"></i>
         </div>
-        <span class="inline-flex items-center gap-0.5 px-2 py-1 rounded-lg text-[11px] font-bold <?= $warnaPersen ?>">
+        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold <?= $warnaPersen ?> shadow-sm">
             <i class="bi <?= $iconPersen ?> text-xs"></i>
             <?= abs($k['persen']) ?>%
         </span>
     </div>
-    <p class="text-[13px] font-medium text-slate-500 mb-1"><?= $k['label'] ?></p>
-    <p class="text-[28px] leading-none font-extrabold text-slate-900 tracking-tight"><?= $k['value'] ?></p>
-    <p class="text-[11px] text-slate-400 mt-2">vs bulan lalu · <?= $k['sub'] ?></p>
+
+    <div class="relative">
+        <p class="text-[13px] font-medium text-slate-500 mb-1.5"><?= $k['label'] ?></p>
+        <p class="text-[32px] leading-none font-extrabold text-slate-900 tracking-tight"><?= $k['value'] ?></p>
+        <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1">
+            <i class="bi bi-clock text-[10px]"></i>
+            vs bulan lalu · <?= $k['sub'] ?>
+        </p>
+    </div>
 </div>
 <?php endforeach; ?>
 </div>

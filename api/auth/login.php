@@ -8,10 +8,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     redirect(BASE_URL . '/pages/auth/login.php');
 }
 
-$email    = trim($_POST['email']    ?? '');
-$password = trim($_POST['password'] ?? '');
+$email    = trim($_POST['email'] ?? '');
+$password = $_POST['password'] ?? '';
 
-if (!$email || !$password) {
+if ($email === '' || $password === '') {
     setFlash('error', 'Email dan password wajib diisi.');
     redirect(BASE_URL . '/pages/auth/login.php');
 }
@@ -30,7 +30,7 @@ if (!$user || !password_verify($password, $user['password'])) {
     redirect(BASE_URL . '/pages/auth/login.php');
 }
 
-// Set session
+session_regenerate_id(true);
 $_SESSION['user'] = [
     'id'    => $user['id'],
     'nama'  => $user['nama'],
@@ -38,7 +38,6 @@ $_SESSION['user'] = [
     'role'  => $user['role'],
 ];
 
-session_regenerate_id(true);
 require_once __DIR__ . '/../../includes/activity.php';
 logActivity('login', 'login', 'Masuk ke sistem', 'auth');
 setFlash('success', 'Selamat datang, ' . $user['nama'] . '!');

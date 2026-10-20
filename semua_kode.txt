@@ -1,6 +1,6 @@
 ﻿
 
---- FILE: api\auth\login.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\auth\login.php ---
 
 <?php
 // api/auth/login.php
@@ -48,7 +48,7 @@ logActivity('login', 'login', 'Masuk ke sistem', 'auth');
 setFlash('success', 'Selamat datang, ' . $user['nama'] . '!');
 redirect(BASE_URL . '/pages/dashboard/index.php');
 
---- FILE: api\auth\logout.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\auth\logout.php ---
 
 <?php
 require_once __DIR__ . '/../../config/database.php';
@@ -65,7 +65,7 @@ $_SESSION = [];
 session_destroy();
 redirect(BASE_URL . '/pages/auth/login.php');
 
---- FILE: api\export\material-csv.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\export\material-csv.php ---
 
 <?php
 // api/export/material-csv.php
@@ -192,8 +192,7 @@ foreach ($materials as $index => $material) {
 fclose($output);
 exit;
 
-
---- FILE: api\jadwal\delete.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\jadwal\delete.php ---
 
 <?php // api/jadwal/delete.php
 require_once __DIR__.'/../../config/database.php';
@@ -204,7 +203,7 @@ $id=(int)($_POST['id']??0);
 db()->prepare("DELETE FROM jadwal WHERE id=?")->execute([$id]);
 setFlash('success','Jadwal berhasil dihapus.');redirect(BASE_URL.'/pages/jadwal/index.php');
 
---- FILE: api\jadwal\reschedule.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\jadwal\reschedule.php ---
 
 <?php
 // api/jadwal/reschedule.php â€” AJAX reschedule via drag-drop
@@ -237,7 +236,7 @@ try {
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
 
---- FILE: api\jadwal\store.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\jadwal\store.php ---
 
 <?php // api/jadwal/store.php
 require_once __DIR__.'/../../config/database.php';
@@ -253,7 +252,7 @@ $p=db()->prepare("SELECT nama_proyek FROM proyek WHERE id=?");$p->execute([(int)
 kirimNotifikasiKeRole('manajer_proyek','Jadwal Baru',"Jadwal ditambahkan untuk proyek \"{$p->fetchColumn()}\".");
 setFlash('success','Jadwal berhasil ditambahkan.');redirect(BASE_URL.'/pages/jadwal/index.php');
 
---- FILE: api\jadwal\update.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\jadwal\update.php ---
 
 <?php // api/jadwal/update.php
 require_once __DIR__.'/../../config/database.php';
@@ -266,7 +265,7 @@ $stmt=db()->prepare("UPDATE jadwal SET proyek_id=?,tanggal_mulai=?,tanggal_seles
 $stmt->execute([(int)$_POST['proyek_id'],$_POST['tanggal_mulai'],$_POST['tanggal_selesai'],trim($_POST['keterangan']??''),$_POST['status'],$id]);
 setFlash('success','Jadwal berhasil diperbarui.');redirect(BASE_URL.'/pages/jadwal/index.php');
 
---- FILE: api\komponen\delete.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\komponen\delete.php ---
 
 <?php
 // api/komponen/delete.php
@@ -282,10 +281,10 @@ db()->prepare("DELETE FROM komponen WHERE id = ?")->execute([$id]);
 setFlash('success','Komponen berhasil dihapus.');
 redirect(BASE_URL.'/pages/komponen/index.php');
 
---- FILE: api\komponen\komponen.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\komponen\komponen.php ---
 
 
---- FILE: api\komponen\stok-masuk.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\komponen\stok-masuk.php ---
 
 <?php
 // api/komponen/stok-masuk.php
@@ -339,7 +338,7 @@ kirimNotifikasiKeRole('admin', 'Stok Masuk', "{$user['nama']} menambahkan stok \
 setFlash('success', "Stok \"{$k['nama_komponen']}\" berhasil ditambah {$jumlah} {$k['satuan']}.");
 redirect(BASE_URL . '/pages/komponen/index.php');
 
---- FILE: api\komponen\store.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\komponen\store.php ---
 
 <?php
 // api/komponen/store.php
@@ -361,77 +360,7 @@ $stmt->execute([trim($_POST['nama_komponen']),$_POST['kategori'],$_POST['satuan'
 setFlash('success','Komponen berhasil ditambahkan.');
 redirect(BASE_URL.'/pages/komponen/index.php');
 
---- FILE: api\komponen\update.php ---
-
-<?php
-// api/komponen/update.php
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../includes/functions.php';
-require_once __DIR__ . '/../../includes/auth.php';
-require_once __DIR__ . '/../../includes/csrf.php';
-require_once __DIR__ . '/../../includes/activity.php';
-requireRole(['admin', 'gudang']);
-
-$id = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT);
-$stok = filter_var($_POST['stok_tersedia'] ?? null, FILTER_VALIDATE_INT);
-$stokMinimum = filter_var($_POST['stok_minimum'] ?? null, FILTER_VALIDATE_INT);
-$namaInput = $_POST['nama_komponen'] ?? '';
-$nama = is_string($namaInput) ? trim($namaInput) : '';
-$kategori = $_POST['kategori'] ?? '';
-$satuan = $_POST['satuan'] ?? '';
-$kategoriValid = ['Panel Surya', 'Inverter', 'Baterai', 'Kabel', 'Mounting', 'Proteksi', 'Monitoring', 'Lainnya'];
-$satuanValid = ['unit', 'buah', 'meter', 'set', 'rol', 'lembar', 'kg'];
-
-if (!verifyCsrf()) {
-    setFlash('error', 'Token keamanan tidak valid. Silakan refresh halaman dan coba lagi.');
-    redirect(BASE_URL . '/pages/komponen/index.php');
-}
-
-if ($id === false || $id === null || $id < 1 ||
-    $stok === false || $stok === null || $stok < 0 ||
-    $stokMinimum === false || $stokMinimum === null || $stokMinimum < 0 ||
-    $nama === '' || !is_string($kategori) || !in_array($kategori, $kategoriValid, true) ||
-    !is_string($satuan) || !in_array($satuan, $satuanValid, true)) {
-    setFlash('error', 'Data komponen tidak valid.');
-    redirect(BASE_URL . '/pages/komponen/index.php');
-}
-
-$db = db();
-$stmt = $db->prepare('SELECT nama_komponen FROM komponen WHERE id = ?');
-$stmt->execute([$id]);
-$komponen = $stmt->fetch();
-if (!$komponen) {
-    setFlash('error', 'Komponen tidak ditemukan.');
-    redirect(BASE_URL . '/pages/komponen/index.php');
-}
-
-$db->prepare("
-    UPDATE komponen
-    SET nama_komponen = ?, kategori = ?, satuan = ?, stok_tersedia = ?, stok_minimum = ?
-    WHERE id = ?
-")->execute([$nama, $kategori, $satuan, $stok, $stokMinimum, $id]);
-
-if ($stok <= $stokMinimum) {
-    kirimNotifikasiKeRole(
-        'admin',
-        'Peringatan Stok',
-        "Stok \"{$nama}\" diperbarui menjadi {$stok} {$satuan} (minimum: {$stokMinimum})."
-    );
-}
-
-logActivity(
-    'update_komponen',
-    'update',
-    "Memperbarui komponen \"{$komponen['nama_komponen']}\"",
-    'komponen',
-    ['id' => $id, 'stok_baru' => $stok, 'stok_minimum' => $stokMinimum]
-);
-
-setFlash('success', 'Komponen berhasil diperbarui.');
-redirect(BASE_URL . '/pages/komponen/index.php');
-
-
---- FILE: api\komponen\update-stok.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\komponen\update-stok.php ---
 
 <?php
 // api/komponen/update-stok.php
@@ -503,8 +432,76 @@ echo json_encode([
     'message' => 'Stok berhasil diperbarui.',
 ]);
 
+--- FILE: C:\xampp\htdocs\sistem-plts\api\komponen\update.php ---
 
---- FILE: api\laporan\store.php ---
+<?php
+// api/komponen/update.php
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/functions.php';
+require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../includes/csrf.php';
+require_once __DIR__ . '/../../includes/activity.php';
+requireRole(['admin', 'gudang']);
+
+$id = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT);
+$stok = filter_var($_POST['stok_tersedia'] ?? null, FILTER_VALIDATE_INT);
+$stokMinimum = filter_var($_POST['stok_minimum'] ?? null, FILTER_VALIDATE_INT);
+$namaInput = $_POST['nama_komponen'] ?? '';
+$nama = is_string($namaInput) ? trim($namaInput) : '';
+$kategori = $_POST['kategori'] ?? '';
+$satuan = $_POST['satuan'] ?? '';
+$kategoriValid = ['Panel Surya', 'Inverter', 'Baterai', 'Kabel', 'Mounting', 'Proteksi', 'Monitoring', 'Lainnya'];
+$satuanValid = ['unit', 'buah', 'meter', 'set', 'rol', 'lembar', 'kg'];
+
+if (!verifyCsrf()) {
+    setFlash('error', 'Token keamanan tidak valid. Silakan refresh halaman dan coba lagi.');
+    redirect(BASE_URL . '/pages/komponen/index.php');
+}
+
+if ($id === false || $id === null || $id < 1 ||
+    $stok === false || $stok === null || $stok < 0 ||
+    $stokMinimum === false || $stokMinimum === null || $stokMinimum < 0 ||
+    $nama === '' || !is_string($kategori) || !in_array($kategori, $kategoriValid, true) ||
+    !is_string($satuan) || !in_array($satuan, $satuanValid, true)) {
+    setFlash('error', 'Data komponen tidak valid.');
+    redirect(BASE_URL . '/pages/komponen/index.php');
+}
+
+$db = db();
+$stmt = $db->prepare('SELECT nama_komponen FROM komponen WHERE id = ?');
+$stmt->execute([$id]);
+$komponen = $stmt->fetch();
+if (!$komponen) {
+    setFlash('error', 'Komponen tidak ditemukan.');
+    redirect(BASE_URL . '/pages/komponen/index.php');
+}
+
+$db->prepare("
+    UPDATE komponen
+    SET nama_komponen = ?, kategori = ?, satuan = ?, stok_tersedia = ?, stok_minimum = ?
+    WHERE id = ?
+")->execute([$nama, $kategori, $satuan, $stok, $stokMinimum, $id]);
+
+if ($stok <= $stokMinimum) {
+    kirimNotifikasiKeRole(
+        'admin',
+        'Peringatan Stok',
+        "Stok \"{$nama}\" diperbarui menjadi {$stok} {$satuan} (minimum: {$stokMinimum})."
+    );
+}
+
+logActivity(
+    'update_komponen',
+    'update',
+    "Memperbarui komponen \"{$komponen['nama_komponen']}\"",
+    'komponen',
+    ['id' => $id, 'stok_baru' => $stok, 'stok_minimum' => $stokMinimum]
+);
+
+setFlash('success', 'Komponen berhasil diperbarui.');
+redirect(BASE_URL . '/pages/komponen/index.php');
+
+--- FILE: C:\xampp\htdocs\sistem-plts\api\laporan\store.php ---
 
 <?php
 // api/laporan/store.php
@@ -573,7 +570,7 @@ logActivity('upload_laporan', 'create', "Mengunggah laporan: " . trim($_POST['ju
 setFlash('success', 'Laporan berhasil diunggah.');
 redirect(BASE_URL . '/pages/laporan/index.php');
 
---- FILE: api\material\store.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\material\store.php ---
 
 <?php
 // api/material/store.php
@@ -619,7 +616,7 @@ if ($updated['stok_tersedia'] <= $updated['stok_minimum']) {
 setFlash('success','Penggunaan material berhasil dicatat dan stok diperbarui.');
 redirect(BASE_URL.'/pages/material/index.php');
 
---- FILE: api\notifikasi\baca.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\notifikasi\baca.php ---
 
 <?php // api/notifikasi/baca.php
 require_once __DIR__.'/../../config/database.php';
@@ -631,7 +628,7 @@ $id=(int)($_POST['id']??0);
 if($id){db()->prepare("UPDATE notifikasi SET status_baca='sudah_dibaca' WHERE id=? AND user_id=?")->execute([$id,$user['id']]);}
 redirect(BASE_URL.'/pages/notifikasi/index.php');
 
---- FILE: api\pelanggan\bulk.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\pelanggan\bulk.php ---
 
 <?php
 // api/pelanggan/bulk.php
@@ -670,7 +667,7 @@ if ($action === 'delete') {
 
 redirect(BASE_URL . '/pages/pelanggan/index.php');
 
---- FILE: api\pelanggan\delete.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\pelanggan\delete.php ---
 
 <?php // api/pelanggan/delete.php
 require_once __DIR__.'/../../config/database.php';
@@ -685,7 +682,7 @@ if($cek->fetchColumn()>0){setFlash('error','Pelanggan tidak dapat dihapus karena
 db()->prepare("DELETE FROM pelanggan WHERE id=?")->execute([$id]);
 setFlash('success','Pelanggan berhasil dihapus.');redirect(BASE_URL.'/pages/pelanggan/index.php');
 
---- FILE: api\pelanggan\eksport.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\pelanggan\eksport.php ---
 
 <?php
 // api/pelanggan/export.php
@@ -727,7 +724,7 @@ foreach ($pelanggans as $p) {
 fclose($output);
 exit;
 
---- FILE: api\pelanggan\store.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\pelanggan\store.php ---
 
 <?php // api/pelanggan/store.php
 require_once __DIR__.'/../../config/database.php';
@@ -741,7 +738,7 @@ $stmt=db()->prepare("INSERT INTO pelanggan(nama_pelanggan,alamat,no_telp,email) 
 $stmt->execute([trim($_POST['nama_pelanggan']),trim($_POST['alamat']),trim($_POST['no_telp']),trim($_POST['email']??'')]);
 setFlash('success','Pelanggan berhasil ditambahkan.');redirect(BASE_URL.'/pages/pelanggan/index.php');
 
---- FILE: api\pelanggan\update.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\pelanggan\update.php ---
 
 <?php // api/pelanggan/update.php
 require_once __DIR__.'/../../config/database.php';
@@ -754,7 +751,7 @@ $stmt=db()->prepare("UPDATE pelanggan SET nama_pelanggan=?,alamat=?,no_telp=?,em
 $stmt->execute([trim($_POST['nama_pelanggan']),trim($_POST['alamat']),trim($_POST['no_telp']),trim($_POST['email']??''),$id]);
 setFlash('success','Pelanggan berhasil diperbarui.');redirect(BASE_URL.'/pages/pelanggan/index.php');
 
---- FILE: api\pengguna\delete.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\pengguna\delete.php ---
 
 <?php
 // api/pengguna/delete.php
@@ -783,7 +780,7 @@ logActivity('delete_user', 'delete', "Menghapus pengguna: $nama", 'pengguna');
 setFlash('success','Pengguna berhasil dihapus.');
 redirect(BASE_URL.'/pages/pengguna/index.php');
 
---- FILE: api\pengguna\store.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\pengguna\store.php ---
 
 <?php // api/pengguna/store.php
 require_once __DIR__.'/../../config/database.php';
@@ -800,7 +797,7 @@ $stmt=db()->prepare("INSERT INTO users(nama,email,password,role) VALUES(?,?,?,?)
 $stmt->execute([trim($_POST['nama']),trim($_POST['email']),password_hash($_POST['password'],PASSWORD_BCRYPT),$_POST['role']]);
 setFlash('success','Pengguna berhasil ditambahkan.');redirect(BASE_URL.'/pages/pengguna/index.php');
 
---- FILE: api\pengguna\update.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\pengguna\update.php ---
 
 <?php // api/pengguna/update.php
 require_once __DIR__.'/../../config/database.php';
@@ -818,7 +815,7 @@ if(!empty($_POST['password'])){
 db()->prepare($sql)->execute($data);
 setFlash('success','Pengguna berhasil diperbarui.');redirect(BASE_URL.'/pages/pengguna/index.php');
 
---- FILE: api\proyek\bulk.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\proyek\bulk.php ---
 
 <?php
 // api/proyek/bulk.php
@@ -864,7 +861,7 @@ if ($action === 'delete') {
 
 redirect(BASE_URL . '/pages/proyek/index.php');
 
---- FILE: api\proyek\delete.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\proyek\delete.php ---
 
 <?php
 // api/proyek/delete.php
@@ -886,7 +883,7 @@ logActivity('delete_proyek', 'delete', "Menghapus proyek ID: $id", 'proyek');
 setFlash('success', 'Proyek berhasil dihapus.');
 redirect(BASE_URL . '/pages/proyek/index.php');
 
---- FILE: api\proyek\export.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\proyek\export.php ---
 
 <?php
 // api/proyek/export.php â€” Export CSV
@@ -938,7 +935,7 @@ foreach ($proyeks as $p) {
 fclose($output);
 exit;
 
---- FILE: api\proyek\quick-update.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\proyek\quick-update.php ---
 
 <?php
 // api/proyek/quick-update.php â€” AJAX quick update
@@ -987,7 +984,7 @@ try {
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
 
---- FILE: api\proyek\store.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\proyek\store.php ---
 
 <?php
 // api/proyek/store.php
@@ -1053,7 +1050,7 @@ logActivity('create_proyek', 'create', "Membuat proyek baru: " . trim($_POST['na
 setFlash('success', 'Proyek berhasil ditambahkan.');
 redirect(BASE_URL . '/pages/proyek/index.php');
 
---- FILE: api\proyek\update.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\api\proyek\update.php ---
 
 <?php
 // api/proyek/update.php
@@ -1130,49 +1127,175 @@ kirimNotifikasiKeRole('admin', 'Proyek Diperbarui', "Proyek \"$namaProyek\" tela
 setFlash('success', 'Proyek berhasil diperbarui.');
 redirect(BASE_URL . '/pages/proyek/show.php?id=' . $id);
 
---- FILE: assets\css\style.css ---
-
-/* assets/css/app.css â€” VERSI FINAL */
+--- FILE: C:\xampp\htdocs\sistem-plts\assets\css\style.css ---
 
 /* ============================================================
-   SKELETON SHIMMER
-   ============================================================ */
-.skeleton {
-    background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    border-radius: 6px;
-    display: block;
+   SISTEM PLTS â€” Design System v2.0 (ASLI â€” DIPERTAHANKAN 100%)
+   Modern, Minimal, Cohesive
+============================================================ */
+
+/* ============ CSS VARIABLES ============ */
+:root {
+    /* Brand Colors */
+    --brand-50:  #eef2ff;
+    --brand-100: #e0e7ff;
+    --brand-200: #c7d2fe;
+    --brand-300: #a5b4fc;
+    --brand-400: #818cf8;
+    --brand-500: #6366f1;
+    --brand-600: #4f46e5;
+    --brand-700: #4338ca;
+    --brand-800: #3730a3;
+    --brand-900: #1e1b4b;
+
+    /* Neutral Colors */
+    --slate-50:  #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;
+    --slate-400: #94a3b8;
+    --slate-500: #64748b;
+    --slate-600: #475569;
+    --slate-700: #334155;
+    --slate-800: #1e293b;
+    --slate-900: #0f172a;
+
+    /* Semantic Colors */
+    --success:   #10b981;
+    --success-light: #d1fae5;
+    --warning:   #f59e0b;
+    --warning-light: #fef3c7;
+    --danger:    #ef4444;
+    --danger-light: #fee2e2;
+    --info:      #3b82f6;
+    --info-light:#dbeafe;
+
+    /* Accent */
+    --accent: #fbbf24;
+
+    /* Spacing Scale */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+
+    /* Border Radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 18px;
+    --radius-2xl: 24px;
+    --radius-full: 9999px;
+
+    /* Shadows */
+    --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+    --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+    --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.05);
+    --shadow-2xl: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+    --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+
+    /* Transitions */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* ============ UPGRADE: Spring Physics Easing ============ */
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-html.dark .skeleton {
-    background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
-    background-size: 200% 100%;
+/* ============ BASE STYLES ============ */
+* {
+    box-sizing: border-box;
 }
 
-@keyframes shimmer {
-    0% {
-        background-position: 200% 0;
-    }
-
-    100% {
-        background-position: -200% 0;
-    }
+html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    text-rendering: optimizeLegibility;
 }
 
-/* ============================================================
-   SIDEBAR LINK
-   ============================================================ */
+body {
+    font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    letter-spacing: -0.011em;
+    color: var(--slate-800);
+    background: var(--slate-50);
+    line-height: 1.5;
+}
+
+::selection {
+    background: var(--brand-200);
+    color: var(--brand-900);
+}
+
+/* ============ UPGRADE: Accessibility â€” Focus Visible ============ */
+:focus-visible {
+    outline: 2px solid var(--brand-500);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+/* ============ UPGRADE: Screen Reader Only ============ */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ============ SCROLLBAR ============ */
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: var(--slate-300);
+    border-radius: var(--radius-full);
+    transition: background var(--transition-fast);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--slate-400);
+}
+
+aside::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+aside::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* ============ SIDEBAR ============ */
 .sidebar-link {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 9px 12px;
-    border-radius: 10px;
-    color: rgba(255, 255, 255, 0.65);
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    color: rgba(255, 255, 255, 0.7);
     font-size: 13.5px;
-    font-weight: 400;
-    transition: all .18s ease;
+    font-weight: 500;
+    transition: all var(--transition-base);
     position: relative;
     cursor: pointer;
     border: none;
@@ -1180,23 +1303,19 @@ html.dark .skeleton {
     width: 100%;
     text-align: left;
     text-decoration: none;
+    letter-spacing: -0.005em;
 }
 
 .sidebar-link:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
     color: #fff;
-    padding-left: 16px;
+    transform: translateX(2px);
 }
 
 .sidebar-link.active {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.12);
     color: #fff;
-    font-weight: 500;
-}
-
-.sidebar-section {
-    color: rgba(255, 255, 255, 0.45);
-    letter-spacing: 0.12em;
+    font-weight: 600;
 }
 
 .sidebar-link.active::before {
@@ -1206,344 +1325,754 @@ html.dark .skeleton {
     top: 50%;
     transform: translateY(-50%);
     width: 3px;
-    height: 18px;
-    background: #fbbf24;
-    border-radius: 0 3px 3px 0;
+    height: 20px;
+    background: var(--accent);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.5); /* UPGRADE: glow effect */
 }
 
-/* ============================================================
-   CARD
-   ============================================================ */
+.sidebar-section {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+/* ============ CARDS ============ */
 .card {
     background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, .05), 0 1px 2px rgba(0, 0, 0, .04);
-    border: 1px solid #f1f5f9;
-    transition: box-shadow .2s ease;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--slate-100);
+    transition: box-shadow var(--transition-base), transform var(--transition-base);
 }
 
-.card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
+.card-hover:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+/* ============ UPGRADE: Interactive Card (spring physics) ============ */
+.card-interactive {
+    cursor: pointer;
+    transition: all var(--transition-base) var(--ease-spring);
+}
+
+.card-interactive:hover {
+    box-shadow: var(--shadow-xl);
+    transform: translateY(-4px) scale(1.01);
+}
+
+.card-interactive:active {
+    transform: translateY(-2px) scale(0.99);
 }
 
 html.dark .card {
-    background: #1e293b;
-    border-color: #334155;
+    background: var(--slate-800);
+    border-color: var(--slate-700);
     box-shadow: none;
 }
 
-/* ============================================================
-   BUTTONS
-   ============================================================ */
-.btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background: #1a237e;
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background .2s, transform .1s, box-shadow .2s;
+/* Stat Card dengan aksen kiri */
+.stat-card {
     position: relative;
     overflow: hidden;
 }
 
+.stat-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--stat-accent, var(--brand-600));
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* ============ BUTTONS ============ */
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+    border: none;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+}
+
+.btn-primary {
+    background: var(--brand-600);
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(79, 70, 229, 0.15);
+}
+
 .btn-primary:hover {
-    background: #283593;
-    box-shadow: 0 4px 12px rgba(26, 35, 126, .3);
+    background: var(--brand-700);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
     transform: translateY(-1px);
 }
 
 .btn-primary:active {
     transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(79, 70, 229, 0.15);
 }
 
 .btn-secondary {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background: #f1f5f9;
-    color: #475569;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all .2s;
+    background: #fff;
+    color: var(--slate-700);
+    border: 1px solid var(--slate-200);
+    box-shadow: var(--shadow-xs);
 }
 
 .btn-secondary:hover {
-    background: #e2e8f0;
-    color: #1e293b;
-}
-
-html.dark .btn-secondary {
-    background: #334155;
-    color: #94a3b8;
-    border-color: #475569;
-}
-
-html.dark .btn-secondary:hover {
-    background: #475569;
-    color: #e2e8f0;
+    background: var(--slate-50);
+    border-color: var(--slate-300);
+    color: var(--slate-900);
+    transform: translateY(-1px);
 }
 
 .btn-danger {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background: #dc2626;
+    background: var(--danger);
     color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background .2s, transform .1s;
-    position: relative;
-    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(239, 68, 68, 0.15);
 }
 
 .btn-danger:hover {
-    background: #b91c1c;
+    background: #dc2626;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
     transform: translateY(-1px);
 }
 
 .btn-sm {
-    padding: 5px 12px !important;
+    padding: 6px 12px !important;
     font-size: 12px !important;
 }
 
-/* ============================================================
-   FORM
-   ============================================================ */
+/* Ripple Effect */
+.btn-primary::after,
+.btn-danger::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0);
+    transition: background var(--transition-base);
+}
+
+.btn-primary:hover::after,
+.btn-danger:hover::after {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* ============ FORMS ============ */
 .form-label {
     display: block;
     font-size: 13px;
-    font-weight: 500;
-    color: #374151;
+    font-weight: 600;
+    color: var(--slate-700);
     margin-bottom: 6px;
+    letter-spacing: -0.005em;
 }
 
 html.dark .form-label {
-    color: #cbd5e1;
+    color: var(--slate-200);
 }
 
 .form-input,
-.form-select {
+.form-select,
+.form-textarea {
     width: 100%;
-    padding: 9px 12px;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 10px;
-    font-size: 13px;
-    color: #1e293b;
+    padding: 10px 14px;
+    border: 1.5px solid var(--slate-200);
+    border-radius: var(--radius-md);
+    font-size: 13.5px;
+    color: var(--slate-800);
     background: #fff;
-    transition: border-color .2s, box-shadow .2s;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
     outline: none;
+    letter-spacing: -0.005em;
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+    color: var(--slate-400);
+}
+
+.form-input:hover,
+.form-select:hover,
+.form-textarea:hover {
+    border-color: var(--slate-300);
 }
 
 .form-input:focus,
-.form-select:focus {
-    border-color: #3949ab;
-    box-shadow: 0 0 0 3px rgba(57, 73, 171, .12);
+.form-select:focus,
+.form-textarea:focus {
+    border-color: var(--brand-500);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
 }
 
 html.dark .form-input,
-html.dark .form-select {
-    background: #0f172a;
-    border-color: #475569;
-    color: #e2e8f0;
+html.dark .form-select,
+html.dark .form-textarea {
+    background: var(--slate-900);
+    border-color: var(--slate-700);
+    color: var(--slate-100);
 }
 
 html.dark .form-input:focus,
-html.dark .form-select:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
+html.dark .form-select:focus,
+html.dark .form-textarea:focus {
+    border-color: var(--brand-400);
+    box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.15);
 }
 
-/* ============================================================
-   TABLE
-   ============================================================ */
+/* ============ TABLES ============ */
 .table-header {
-    padding: 11px 16px;
+    padding: 12px 20px;
     text-align: left;
     font-size: 11px;
-    font-weight: 600;
-    color: #64748b;
+    font-weight: 700;
+    color: var(--slate-500);
     text-transform: uppercase;
-    letter-spacing: .5px;
+    letter-spacing: 0.05em;
     white-space: nowrap;
+    background: var(--slate-50);
+    border-bottom: 1px solid var(--slate-100);
 }
 
 .table-cell {
-    padding: 11px 16px;
-    font-size: 13px;
-    color: #374151;
+    padding: 14px 20px;
+    font-size: 13.5px;
+    color: var(--slate-700);
     vertical-align: middle;
+    letter-spacing: -0.005em;
 }
 
 html.dark .table-cell {
-    color: #cbd5e1;
+    color: var(--slate-200);
 }
 
 .table-row {
-    border-bottom: 1px solid #f8fafc;
-    transition: background .12s;
+    border-bottom: 1px solid var(--slate-100);
+    transition: background var(--transition-fast);
 }
 
 .table-row:hover {
-    background: #f8fafc;
+    background: var(--brand-50);
+}
+
+.table-row:last-child {
+    border-bottom: none;
 }
 
 html.dark .table-row {
-    border-color: #1e293b;
+    border-color: var(--slate-700);
 }
 
 html.dark .table-row:hover {
-    background: #1e293b;
+    background: var(--slate-800);
 }
 
-/* ============================================================
-   STOK STATUS BADGES
-   ============================================================ */
-.stok-aman {
-    background: #dcfce7;
-    color: #15803d;
+table thead th {
+    white-space: nowrap;
 }
 
-.stok-rendah {
-    background: #fef3c7;
-    color: #b45309;
+/* ============ BADGES ============ */
+.badge-modern {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    letter-spacing: -0.005em;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.04);
+    transition: transform var(--transition-fast);
 }
 
-.stok-kritis {
-    background: #fee2e2;
-    color: #b91c1c;
+/* UPGRADE: Badge hover scale */
+.badge-modern:hover {
+    transform: scale(1.05);
 }
 
-.stok-habis {
-    background: #f1f5f9;
-    color: #64748b;
-}
-
-/* Pulse animasi untuk stok kritis */
-.stok-kritis-pulse {
-    animation: pulseKritis 2s ease-in-out infinite;
-}
-
-@keyframes pulseKritis {
-
-    0%,
-    100% {
-        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
-    }
-
-    50% {
-        box-shadow: 0 0 0 5px rgba(239, 68, 68, .15);
-    }
-}
-
-/* ============================================================
-   PAGE TRANSITION
-   ============================================================ */
-main {
-    animation: fadeSlideIn .22s ease-out;
-}
-
-@keyframes fadeSlideIn {
+/* ============ ANIMATIONS ============ */
+@keyframes fadeUp {
     from {
         opacity: 0;
-        transform: translateY(5px);
+        transform: translateY(8px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);
     }
 }
 
-/* ============================================================
-   BREADCRUMB
-   ============================================================ */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@keyframes pulseKritis {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.15); }
+}
+
+@keyframes toastProgress {
+    from { width: 100%; }
+    to { width: 0%; }
+}
+
+@keyframes ripple {
+    from { transform: scale(0); opacity: 1; }
+    to { transform: scale(2.5); opacity: 0; }
+}
+
+/* ============ UPGRADE: New Animations ============ */
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes emptyFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+@keyframes progressShine {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+@keyframes pulseDot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+/* Page transition */
+main > * {
+    animation: fadeUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+main > *:nth-child(2) { animation-delay: 0.05s; }
+main > *:nth-child(3) { animation-delay: 0.1s; }
+main > *:nth-child(4) { animation-delay: 0.15s; }
+main > *:nth-child(5) { animation-delay: 0.2s; } /* UPGRADE: 5th child */
+
+/* Flash message */
+#flashMsg {
+    animation: slideDown 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Stok kritis pulse */
+.stok-kritis-pulse {
+    animation: pulseKritis 2s ease-in-out infinite;
+}
+
+/* UPGRADE: Pulse dot */
+.pulse-dot {
+    animation: pulseDot 2s ease-in-out infinite;
+}
+
+/* ============ SKELETON LOADER ============ */
+.skeleton {
+    background: linear-gradient(90deg, var(--slate-200) 25%, var(--slate-100) 50%, var(--slate-200) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--radius-sm);
+}
+
+html.dark .skeleton {
+    background: linear-gradient(90deg, var(--slate-700) 25%, var(--slate-800) 50%, var(--slate-700) 75%);
+    background-size: 200% 100%;
+}
+
+/* ============ UPGRADE: Enhanced Skeleton Variants ============ */
+.skeleton-card {
+    padding: var(--space-5);
+}
+
+.skeleton-line {
+    height: 12px;
+    margin-bottom: var(--space-2);
+}
+
+.skeleton-line-sm { height: 8px; }
+.skeleton-line-lg { height: 20px; }
+.skeleton-circle { border-radius: 50%; }
+
+/* ============ PROGRESS BAR ============ */
+.progress-track {
+    background: var(--slate-100);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    position: relative; /* UPGRADE */
+}
+
+.progress-fill {
+    background: linear-gradient(90deg, var(--brand-500), var(--brand-600));
+    border-radius: var(--radius-full);
+    transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative; /* UPGRADE */
+    overflow: hidden;   /* UPGRADE */
+}
+
+/* ============ UPGRADE: Progress Shine Effect ============ */
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 100%);
+    animation: progressShine 2.5s ease-in-out infinite;
+}
+
+/* ============ EMPTY STATE ============ */
+.empty-icon {
+    width: 72px;
+    height: 72px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-xl);
+    background: var(--brand-50);
+    color: var(--brand-400);
+    font-size: 28px;
+    margin-bottom: 12px;
+}
+
+/* ============ UPGRADE: Engaging Empty State ============ */
+.empty-state {
+    text-align: center;
+    padding: var(--space-12) var(--space-6);
+}
+
+.empty-state-icon {
+    width: 88px;
+    height: 88px;
+    margin: 0 auto var(--space-5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-2xl);
+    background: linear-gradient(135deg, var(--brand-50), var(--brand-100));
+    color: var(--brand-500);
+    font-size: 36px;
+    position: relative;
+    animation: emptyFloat 3s ease-in-out infinite;
+}
+
+.empty-state-icon::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, var(--brand-200), transparent);
+    opacity: 0.5;
+    z-index: -1;
+    filter: blur(8px);
+}
+
+.empty-state-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--slate-800);
+    margin-bottom: var(--space-2);
+}
+
+.empty-state-desc {
+    font-size: 0.875rem;
+    color: var(--slate-500);
+    margin-bottom: var(--space-5);
+    max-width: 320px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ============ LOGIN PAGE ============ */
+.login-bg {
+    background:
+        radial-gradient(1100px 500px at 8% -10%, rgba(99, 102, 241, 0.35), transparent 60%),
+        radial-gradient(900px 500px at 100% 110%, rgba(251, 191, 36, 0.14), transparent 55%),
+        linear-gradient(135deg, var(--brand-900) 0%, #312e81 55%, var(--brand-900) 100%);
+}
+
+.login-grid {
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, #000 40%, transparent 100%);
+}
+
+.glass {
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* ============ BREADCRUMB ============ */
 .breadcrumb {
     display: flex;
     align-items: center;
     gap: 6px;
+    padding: 8px 0 0;
 }
 
 .breadcrumb a {
     font-size: 12px;
-    color: #64748b;
+    color: var(--slate-500);
     text-decoration: none;
-    transition: color .15s;
+    transition: color var(--transition-fast);
 }
 
 .breadcrumb a:hover {
-    color: #1a237e;
+    color: var(--brand-600);
 }
 
 .breadcrumb .sep {
     font-size: 11px;
-    color: #cbd5e1;
+    color: var(--slate-300);
 }
 
 .breadcrumb .current {
     font-size: 12px;
-    color: #1a237e;
+    color: var(--brand-700);
+    font-weight: 600;
+}
+
+/* ============ UTILITIES ============ */
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ============ UPGRADE: Additional Line Clamp ============ */
+.line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Range slider */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    background: var(--slate-200);
+    border-radius: var(--radius-full);
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--brand-600);
+    border: 3px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    transition: transform var(--transition-fast);
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+}
+
+/* FAB menu */
+.fab-menu-enter {
+    animation: fadeUp 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ============ UPGRADE: Typography Hierarchy ============ */
+.display-xl {
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+}
+
+.display-lg {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+}
+
+.heading-lg {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.heading-md {
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+}
+
+.heading-sm {
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.body-lg { font-size: 1rem; line-height: 1.6; }
+.body-md { font-size: 0.875rem; line-height: 1.6; }
+.body-sm { font-size: 0.8125rem; line-height: 1.5; }
+
+.caption {
+    font-size: 0.75rem;
     font-weight: 500;
+    letter-spacing: 0.01em;
 }
 
-html.dark .breadcrumb a {
-    color: #94a3b8;
+.overline {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
-html.dark .breadcrumb a:hover {
-    color: #93c5fd;
+/* ============ UPGRADE: Modern Delete Modal ============ */
+.delete-modal-header {
+    background: linear-gradient(135deg, var(--danger), #dc2626);
+    padding: var(--space-5) var(--space-6);
+    color: #fff;
 }
 
-html.dark .breadcrumb .current {
-    color: #93c5fd;
+.delete-modal-enter {
+    animation: scaleIn 0.25s var(--ease-spring);
 }
 
-/* ============================================================
-   SCROLLBAR
-   ============================================================ */
-::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+/* ============ UPGRADE: Toast Enhanced ============ */
+#toastContainer {
+    z-index: 9999;
 }
 
-::-webkit-scrollbar-track {
-    background: transparent;
+.toast-item {
+    animation: slideInRight 0.3s var(--ease-out-expo);
 }
 
-::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 10px;
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(100%); }
+    to { opacity: 1; transform: translateX(0); }
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+/* ============ DARK MODE ============ */
+html.dark body {
+    background: var(--slate-900) !important;
+    color: var(--slate-100) !important;
 }
 
-html.dark ::-webkit-scrollbar-thumb {
-    background: #475569;
+html.dark .card {
+    background: var(--slate-800) !important;
+    border-color: var(--slate-700) !important;
 }
 
-/* ============================================================
-   PRINT
-   ============================================================ */
+html.dark aside {
+    background: var(--slate-900) !important;
+}
+
+html.dark header.topbar {
+    background: var(--slate-800) !important;
+    border-color: var(--slate-700) !important;
+}
+
+html.dark .bg-white { background: var(--slate-800) !important; }
+html.dark .bg-slate-50 { background: var(--slate-900) !important; }
+html.dark .bg-slate-100 { background: var(--slate-800) !important; }
+
+html.dark .border-slate-100,
+html.dark .border-slate-200 {
+    border-color: var(--slate-700) !important;
+}
+
+html.dark .text-slate-800,
+html.dark .text-slate-700 {
+    color: var(--slate-100) !important;
+}
+
+html.dark .text-slate-600,
+html.dark .text-slate-500 {
+    color: var(--slate-400) !important;
+}
+
+html.dark .text-slate-400 {
+    color: var(--slate-500) !important;
+}
+
+html.dark table { color: var(--slate-100); }
+html.dark .table-light,
+html.dark thead { background: var(--slate-900) !important; }
+
+html.dark input,
+html.dark select,
+html.dark textarea {
+    background: var(--slate-900) !important;
+    border-color: var(--slate-700) !important;
+    color: var(--slate-100) !important;
+}
+
+html.dark input::placeholder { color: var(--slate-500) !important; }
+
+html.dark .hover\:bg-slate-50:hover { background: var(--slate-800) !important; }
+html.dark .hover\:bg-slate-100:hover { background: var(--slate-700) !important; }
+html.dark .divide-slate-50 > * { border-color: var(--slate-800) !important; }
+
+/* UPGRADE: Dark mode for new components */
+html.dark .empty-state-title { color: var(--slate-100); }
+html.dark .empty-state-desc { color: var(--slate-400); }
+html.dark .empty-state-icon {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.05));
+    color: var(--brand-400);
+}
+
+/* ============ PRINT ============ */
 @media print {
-
     aside,
     header,
     #toastContainer,
@@ -1564,87 +2093,22 @@ html.dark ::-webkit-scrollbar-thumb {
 
     .card {
         box-shadow: none;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--slate-200);
     }
 }
 
-/* ============================================================
-   RIPPLE EFFECT
-   ============================================================ */
-@keyframes ripple {
-    from {
-        transform: scale(0);
-        opacity: 1;
-    }
-
-    to {
-        transform: scale(2.5);
-        opacity: 0;
+/* ============ REDUCED MOTION ============ */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
     }
 }
 
-/* ============================================================
-   TOAST PROGRESS
-   ============================================================ */
-@keyframes toastProgress {
-    from {
-        width: 100%;
-    }
-
-    to {
-        width: 0%;
-    }
-}
-
-/* ============================================================
-   MATERIAL STATUS AND CONTROLS
-   ============================================================ */
-.line-clamp-2 {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
-}
-
-.fab-menu-enter {
-    animation: fab-enter .25s cubic-bezier(.22, 1, .36, 1);
-}
-
-@keyframes fab-enter {
-    from { opacity: 0; transform: translateY(10px) scale(.9); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-input[type="range"] {
-    appearance: none;
-    height: 6px;
-    background: #e2e8f0;
-    border-radius: 9999px;
-    outline: none;
-}
-
-input[type="range"]::-webkit-slider-thumb {
-    appearance: none;
-    width: 18px;
-    height: 18px;
-    background: #4f46e5;
-    border: 3px solid #fff;
-    border-radius: 50%;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, .15);
-    cursor: pointer;
-}
-
-input[type="range"]::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
-    background: #4f46e5;
-    border: 3px solid #fff;
-    border-radius: 50%;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, .15);
-    cursor: pointer;
-}
-
---- FILE: assets\js\app.js ---
+--- FILE: C:\xampp\htdocs\sistem-plts\assets\js\app.js ---
 
 // assets/js/app.js â€” VERSI FINAL LENGKAP
 
@@ -2073,7 +2537,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 5000);
 });
 
---- FILE: config\database.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\config\database.php ---
 
 <?php
 // config/database.php
@@ -2104,7 +2568,7 @@ function db(): PDO {
     return $pdo;
 }
 
---- FILE: includes\activity.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\includes\activity.php ---
 
 <?php
 // includes/activity.php
@@ -2191,7 +2655,7 @@ function getActivityIcon(string $tipe): array {
     return $map[$tipe] ?? $map['other'];
 }
 
---- FILE: includes\auth.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\includes\auth.php ---
 
 <?php
 // includes/auth.php
@@ -2232,15 +2696,14 @@ function isGudang(): bool         { return isRole('gudang'); }
 function isAdminOrManajer(): bool { return hasRole(['admin','manajer_proyek']); }
 function isAdminOrGudang(): bool  { return hasRole(['admin','gudang']); }
 
---- FILE: includes\csrf.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\includes\csrf.php ---
 
 <?php
 function verifyCsrf(): bool {
     return verifyCsrfToken();
 }
 
-
---- FILE: includes\footer.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\includes\footer.php ---
 
 <?php
 // includes/footer.php â€” versi final
@@ -2316,7 +2779,7 @@ function verifyCsrf(): bool {
 </body>
 </html>
 
---- FILE: includes\functions.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\includes\functions.php ---
 
 <?php
 // includes/functions.php
@@ -2420,9 +2883,9 @@ function verifyCsrfToken(): bool {
     if (session_status() === PHP_SESSION_NONE) session_start();
     $token = $_POST['csrf_token'] ?? '';
     return !empty($token) && hash_equals($_SESSION['csrf_token'] ?? '', $token);
-}
+}
 
---- FILE: includes\header.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\includes\header.php ---
 
 <?php
 // includes/header.php
@@ -2622,8 +3085,7 @@ $flash       = getFlash();
 <body class="bg-slate-100/70 text-slate-800 antialiased" <?= $flash ? 'data-flash-type="'.htmlspecialchars($flash['type']).'" data-flash-msg="'.htmlspecialchars($flash['message']).'"' : '' ?>>
 <div class="flex h-screen overflow-hidden">
 
-
---- FILE: includes\sidebar.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\includes\sidebar.php ---
 
 <?php
 // includes/sidebar.php
@@ -2713,7 +3175,7 @@ $inisial   = strtoupper(substr($user['nama'] ?? 'U', 0, 1));
             <?php endif; ?>
         </a>
 
-        <a href="<?= BASE_URL ?>/pages/komponen/index.php?view=status"
+        <a href="<?= BASE_URL ?>/pages/komponen/status.php"
             class="sidebar-link <?= $currentPage === 'status-material' ? 'active' : '' ?>">
             <i class="bi bi-boxes w-5 text-center text-base"></i>
             <span>Status Material</span>
@@ -2880,22 +3342,7 @@ $inisial   = strtoupper(substr($user['nama'] ?? 'U', 0, 1));
     <!-- Page Content -->
     <main class="flex-1 overflow-y-auto p-6">
 
---- FILE: index.php ---
-
-<?php
-// index.php â€” redirect otomatis
-require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/includes/functions.php';
-if (session_status() === PHP_SESSION_NONE) session_start();
-
-if (!empty($_SESSION['user'])) {
-    header('Location: ' . BASE_URL . '/pages/dashboard/index.php');
-} else {
-    header('Location: ' . BASE_URL . '/pages/auth/login.php');
-}
-exit;
-
---- FILE: pages\analitik\index.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\analitik\index.php ---
 
 <?php
 // pages/analitik/index.php â€” LAPORAN & ANALITIK
@@ -3209,7 +3656,7 @@ new Chart(document.getElementById('chartTeknisi'), {
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\auth\login.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\auth\login.php ---
 
 <?php
 // pages/auth/login.php
@@ -3423,8 +3870,7 @@ document.getElementById('loginForm').addEventListener('submit', function () {
 </body>
 </html>
 
-
---- FILE: pages\dashboard\index.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\dashboard\index.php ---
 
 <?php
 // pages/dashboard/index.php â€” UPGRADED
@@ -4355,8 +4801,7 @@ new Chart(document.getElementById('chartStatus'), {
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
-
---- FILE: pages\errors\403.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\errors\403.php ---
 
 <?php
 // pages/errors/403.php
@@ -4403,8 +4848,7 @@ new Chart(document.getElementById('chartStatus'), {
 </body>
 </html>
 
-
---- FILE: pages\jadwal\create.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\jadwal\create.php ---
 
 <?php
 // pages/jadwal/create.php
@@ -4469,10 +4913,10 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\jadwal\edit.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\jadwal\edit.php ---
 
 
---- FILE: pages\jadwal\index.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\jadwal\index.php ---
 
 <?php
 // pages/jadwal/index.php â€” KALENDAR INTERAKTIF
@@ -4786,7 +5230,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEventMo
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\komponen\create.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\komponen\create.php ---
 
 <?php
 // pages/komponen/create.php
@@ -4860,7 +5304,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\komponen\edit.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\komponen\edit.php ---
 
 <?php
 // pages/komponen/edit.php
@@ -4939,12 +5383,11 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\komponen\index.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\komponen\index.php ---
 
 <?php
-$isStatusView = ($_GET['view'] ?? '') === 'status';
-$pageTitle   = $isStatusView ? 'Status Material' : 'Komponen PLTS';
-$currentPage = $isStatusView ? 'status-material' : 'komponen';
+$pageTitle   = 'Komponen PLTS';
+$currentPage = 'komponen';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/auth.php';
@@ -5438,7 +5881,275 @@ function filterByStatus(status) {
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\laporan\create.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\komponen\status.php ---
+
+<?php
+// pages/komponen/status.php â€” OVERVIEW STOK (View-only untuk semua role)
+$pageTitle   = 'Status Material';
+$currentPage = 'status-material';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/functions.php';
+require_once __DIR__ . '/../../includes/auth.php';
+requireLogin();
+
+$db = db();
+
+// Summary stok
+$summary = $db->query("
+    SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN stok_tersedia > stok_minimum * 1.5 THEN 1 ELSE 0 END) as aman,
+        SUM(CASE WHEN stok_tersedia > stok_minimum AND stok_tersedia <= stok_minimum * 1.5 THEN 1 ELSE 0 END) as rendah,
+        SUM(CASE WHEN stok_tersedia > 0 AND stok_tersedia <= stok_minimum THEN 1 ELSE 0 END) as kritis,
+        SUM(CASE WHEN stok_tersedia = 0 THEN 1 ELSE 0 END) as habis,
+        COALESCE(SUM(stok_tersedia), 0) as total_unit
+    FROM komponen
+")->fetch();
+
+// Komponen kritis & habis (prioritas atas)
+$komponenPerhatian = $db->query("
+    SELECT * FROM komponen
+    WHERE stok_tersedia <= stok_minimum
+    ORDER BY stok_tersedia ASC, nama_komponen ASC
+")->fetchAll();
+
+// Stok per kategori
+$perKategori = $db->query("
+    SELECT kategori,
+           COUNT(*) as jumlah_item,
+           SUM(stok_tersedia) as total_stok,
+           SUM(CASE WHEN stok_tersedia <= stok_minimum THEN 1 ELSE 0 END) as kritis
+    FROM komponen
+    GROUP BY kategori
+    ORDER BY total_stok DESC
+")->fetchAll();
+
+// Komponen dengan stok terbanyak (top 5)
+$topStok = $db->query("
+    SELECT * FROM komponen
+    WHERE stok_tersedia > 0
+    ORDER BY stok_tersedia DESC
+    LIMIT 5
+")->fetchAll();
+
+include __DIR__ . '/../../includes/header.php';
+include __DIR__ . '/../../includes/sidebar.php';
+?>
+
+<div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+    <div class="flex items-center gap-3">
+        <span class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/25">
+            <i class="bi bi-boxes text-lg"></i>
+        </span>
+        <div>
+            <h2 class="text-lg font-bold text-slate-900 tracking-tight">Status Material</h2>
+            <p class="text-[13px] text-slate-500 mt-0.5">Monitoring stok komponen PLTS secara real-time</p>
+        </div>
+    </div>
+    <?php if (isAdminOrGudang()): ?>
+    <a href="<?= BASE_URL ?>/pages/komponen/index.php" class="btn-primary">
+        <i class="bi bi-gear"></i> Kelola Komponen
+    </a>
+    <?php endif; ?>
+</div>
+
+<!-- Summary Cards -->
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
+    <?php
+    $cards = [
+        ['val' => (int)$summary['total'],      'label' => 'Total Komponen', 'icon' => 'bi-grid-3x3-gap',           'color' => 'bg-slate-600',   'border' => 'border-slate-200'],
+        ['val' => (int)$summary['aman'],       'label' => 'Stok Aman',      'icon' => 'bi-check-circle-fill',       'color' => 'bg-emerald-500', 'border' => 'border-emerald-200'],
+        ['val' => (int)$summary['rendah'],     'label' => 'Stok Rendah',    'icon' => 'bi-dash-circle-fill',        'color' => 'bg-amber-500',   'border' => 'border-amber-200'],
+        ['val' => (int)$summary['kritis'],     'label' => 'Stok Kritis',    'icon' => 'bi-exclamation-circle-fill', 'color' => 'bg-orange-500',  'border' => 'border-orange-200'],
+        ['val' => (int)$summary['habis'],      'label' => 'Stok Habis',     'icon' => 'bi-x-circle-fill',           'color' => 'bg-red-500',     'border' => 'border-red-200'],
+    ];
+    foreach ($cards as $c): ?>
+    <div class="card p-4 border <?= $c['border'] ?> card-hover">
+        <div class="w-9 h-9 <?= $c['color'] ?> rounded-xl flex items-center justify-center mb-3 shadow-sm">
+            <i class="bi <?= $c['icon'] ?> text-white"></i>
+        </div>
+        <div class="text-2xl font-bold text-slate-800"><?= number_format($c['val']) ?></div>
+        <div class="text-xs text-slate-500 mt-0.5"><?= $c['label'] ?></div>
+    </div>
+    <?php endforeach; ?>
+</div>
+
+<!-- Alert jika ada stok habis/kritis -->
+<?php if ((int)$summary['habis'] > 0 || (int)$summary['kritis'] > 0): ?>
+<div class="card p-4 mb-5 border-2 border-red-200 bg-gradient-to-r from-red-50 to-orange-50">
+    <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <i class="bi bi-exclamation-triangle-fill text-red-500 text-lg"></i>
+        </div>
+        <div class="flex-1">
+            <h4 class="text-sm font-bold text-red-800">
+                âš ï¸ <?= (int)$summary['habis'] + (int)$summary['kritis'] ?> Komponen Perlu Perhatian
+            </h4>
+            <p class="text-xs text-red-600 mt-0.5">
+                <?php if ((int)$summary['habis'] > 0): ?>
+                <strong><?= (int)$summary['habis'] ?> stok habis</strong>
+                <?php endif; ?>
+                <?php if ((int)$summary['habis'] > 0 && (int)$summary['kritis'] > 0): ?> dan <?php endif; ?>
+                <?php if ((int)$summary['kritis'] > 0): ?>
+                <strong><?= (int)$summary['kritis'] ?> stok kritis</strong>
+                <?php endif; ?>
+                â€” segera lakukan pengisian ulang.
+            </p>
+        </div>
+        <?php if (isAdminOrGudang()): ?>
+        <a href="<?= BASE_URL ?>/pages/komponen/index.php?status=kritis" class="btn-danger btn-sm flex-shrink-0">
+            Lihat Detail
+        </a>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+    <!-- Komponen Perlu Perhatian -->
+    <div class="card overflow-hidden lg:col-span-2">
+        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="text-sm font-bold text-slate-800 tracking-tight flex items-center gap-2">
+                <i class="bi bi-exclamation-triangle text-red-500"></i>
+                Komponen Perlu Perhatian
+            </h3>
+            <span class="text-xs text-slate-400"><?= count($komponenPerhatian) ?> item</span>
+        </div>
+        <?php if (empty($komponenPerhatian)): ?>
+        <div class="px-5 py-12 text-center">
+            <i class="bi bi-check-circle text-4xl text-emerald-300 block mb-2"></i>
+            <p class="text-sm text-slate-500">Semua stok dalam kondisi aman!</p>
+        </div>
+        <?php else: ?>
+        <div class="divide-y divide-slate-100 max-h-[480px] overflow-y-auto">
+            <?php foreach ($komponenPerhatian as $k):
+                [$cls, $label, $statusKey] = stokStatus($k['stok_tersedia'], $k['stok_minimum']);
+                $pct = $k['stok_minimum'] > 0 ? min(100, round($k['stok_tersedia'] / $k['stok_minimum'] * 100)) : 0;
+                $barColor = $statusKey === 'habis' ? 'bg-slate-400' : 'bg-red-500';
+            ?>
+            <div class="px-5 py-3.5 hover:bg-slate-50/70 transition-colors">
+                <div class="flex items-start justify-between gap-3 mb-2">
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <div class="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0">
+                            <i class="bi bi-box-seam"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-semibold text-slate-800 truncate"><?= sanitize($k['nama_komponen']) ?></p>
+                            <p class="text-xs text-slate-400"><?= sanitize($k['kategori']) ?> Â· Min: <?= $k['stok_minimum'] ?> <?= sanitize($k['satuan']) ?></p>
+                        </div>
+                    </div>
+                    <span class="badge-modern inline-flex items-center rounded-full text-xs font-semibold <?= $cls ?> flex-shrink-0">
+                        <?= $label ?>
+                    </span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div class="h-full <?= $barColor ?> rounded-full" style="width: <?= $pct ?>%"></div>
+                    </div>
+                    <span class="text-xs font-bold <?= $statusKey === 'habis' ? 'text-slate-500' : 'text-red-600' ?> w-20 text-right">
+                        <?= $k['stok_tersedia'] ?> / <?= $k['stok_minimum'] ?> <?= sanitize($k['satuan']) ?>
+                    </span>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- Stok Per Kategori -->
+    <div class="card overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100">
+            <h3 class="text-sm font-bold text-slate-800 tracking-tight flex items-center gap-2">
+                <i class="bi bi-pie-chart text-purple-600"></i>
+                Stok Per Kategori
+            </h3>
+        </div>
+        <div class="p-5">
+            <div style="height: 180px;">
+                <canvas id="chartKategori"></canvas>
+            </div>
+            <div class="mt-4 space-y-2">
+                <?php foreach ($perKategori as $k): ?>
+                <div class="flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-2 min-w-0 flex-1">
+                        <span class="text-sm"><?= ['Panel Surya'=>'â˜€ï¸','Inverter'=>'âš¡','Baterai'=>'ðŸ”‹','Kabel'=>'ðŸ”Œ','Mounting'=>'ðŸ”©','Proteksi'=>'ðŸ›¡ï¸','Monitoring'=>'ðŸ“¡','Lainnya'=>'ðŸ“¦'][$k['kategori']] ?? 'ðŸ“¦' ?></span>
+                        <span class="text-slate-600 truncate"><?= sanitize($k['kategori']) ?></span>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <span class="font-semibold text-slate-700"><?= number_format($k['total_stok']) ?></span>
+                        <?php if ($k['kritis'] > 0): ?>
+                        <span class="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full font-bold"><?= $k['kritis'] ?> kritis</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Stok Terbanyak -->
+<div class="card overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-100">
+        <h3 class="text-sm font-bold text-slate-800 tracking-tight flex items-center gap-2">
+            <i class="bi bi-trophy text-amber-500"></i>
+            Komponen dengan Stok Terbanyak
+        </h3>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
+        <?php foreach ($topStok as $i => $k): ?>
+        <div class="p-4 text-center">
+            <div class="text-3xl mb-1"><?= ['ðŸ¥‡','ðŸ¥ˆ','ðŸ¥‰','4ï¸âƒ£','5ï¸âƒ£'][$i] ?? 'â€¢' ?></div>
+            <p class="text-lg font-bold text-slate-800"><?= number_format($k['stok_tersedia']) ?></p>
+            <p class="text-xs text-slate-400 mb-1"><?= sanitize($k['satuan']) ?></p>
+            <p class="text-xs font-medium text-slate-600 truncate"><?= sanitize($k['nama_komponen']) ?></p>
+            <p class="text-[10px] text-slate-400 mt-0.5"><?= sanitize($k['kategori']) ?></p>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+
+<script>
+// Chart Stok Per Kategori
+const chartData = <?= json_encode([
+    'labels' => array_column($perKategori, 'kategori'),
+    'data'   => array_map('intval', array_column($perKategori, 'total_stok')),
+]) ?>;
+
+const ctx = document.getElementById('chartKategori');
+if (ctx) {
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: chartData.labels,
+            datasets: [{
+                data: chartData.data,
+                backgroundColor: ['#4f46e5','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#64748b'],
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    padding: 12,
+                    cornerRadius: 8,
+                }
+            }
+        }
+    });
+}
+</script>
+
+<?php include __DIR__ . '/../../includes/footer.php'; ?>
+
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\laporan\create.php ---
 
 <?php
 $pageTitle    = 'Unggah Laporan';
@@ -5813,7 +6524,7 @@ document.querySelectorAll('.status-option').forEach(label => {
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\laporan\index.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\laporan\index.php ---
 
 <?php
 $pageTitle   = 'Laporan Lapangan';
@@ -6085,7 +6796,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\laporan\show.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\laporan\show.php ---
 
 <?php
 $pageTitle   = 'Detail Laporan';
@@ -6517,7 +7228,7 @@ document.addEventListener('keydown', e => {
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\laporan\stok.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\laporan\stok.php ---
 
 <?php
 // pages/laporan/stok.php
@@ -6849,8 +7560,7 @@ if (proyekCanvas) {
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
-
---- FILE: pages\material\create.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\material\create.php ---
 
 <?php
 // pages/material/create.php
@@ -7011,7 +7721,7 @@ document.getElementById('formMaterial').addEventListener('submit', function(e) {
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\material\index.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\material\index.php ---
 
 <?php
 $pageTitle   = 'Penggunaan Material';
@@ -7245,7 +7955,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\notifikasi\index.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\notifikasi\index.php ---
 
 <?php
 // pages/notifikasi/index.php
@@ -7349,7 +8059,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\pelanggan\create.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\pelanggan\create.php ---
 
 <?php
 $pageTitle   = 'Tambah Pelanggan';
@@ -7405,7 +8115,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\pelanggan\edit.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\pelanggan\edit.php ---
 
 <?php
 $pageTitle   = 'Edit Pelanggan';
@@ -7474,7 +8184,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\pelanggan\index.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\pelanggan\index.php ---
 
 <?php
 $pageTitle   = 'Pelanggan';
@@ -7572,7 +8282,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\pengguna\create.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\pengguna\create.php ---
 
 <?php
 $pageTitle   = 'Tambah Pengguna';
@@ -7638,7 +8348,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\pengguna\edit.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\pengguna\edit.php ---
 
 <?php
 $pageTitle   = 'Edit Pengguna';
@@ -7724,7 +8434,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\pengguna\index.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\pengguna\index.php ---
 
 <?php
 // pages/pengguna/index.php â€” CARD GRID VISUAL
@@ -7927,7 +8637,7 @@ function closeModal() {
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\proyek\create.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\proyek\create.php ---
 
 <?php
 // pages/proyek/create.php
@@ -8030,7 +8740,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\proyek\edit.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\proyek\edit.php ---
 
 <?php
 // pages/proyek/edit.php
@@ -8161,7 +8871,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\proyek\gantt.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\proyek\gantt.php ---
 
 <?php
 // pages/proyek/gantt.php
@@ -8496,7 +9206,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\proyek\index.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\proyek\index.php ---
 
 <?php
 // pages/proyek/index.php â€” DENGAN QUICK UPDATE MODAL
@@ -8794,7 +9504,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQuickUp
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\proyek\kanban.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\proyek\kanban.php ---
 
 <?php
 // pages/proyek/kanban.php â€” KANBAN BOARD
@@ -9008,7 +9718,7 @@ document.addEventListener('dragend', e => {
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
---- FILE: pages\proyek\show.php ---
+--- FILE: C:\xampp\htdocs\sistem-plts\pages\proyek\show.php ---
 
 <?php
 // pages/proyek/show.php â€” DENGAN TIMELINE + PETA
@@ -9524,3 +10234,18 @@ document.addEventListener('DOMContentLoaded', function() {
 <?php endif; ?>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
+
+--- FILE: C:\xampp\htdocs\sistem-plts\index.php ---
+
+<?php
+// index.php â€” redirect otomatis
+require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/includes/functions.php';
+if (session_status() === PHP_SESSION_NONE) session_start();
+
+if (!empty($_SESSION['user'])) {
+    header('Location: ' . BASE_URL . '/pages/dashboard/index.php');
+} else {
+    header('Location: ' . BASE_URL . '/pages/auth/login.php');
+}
+exit;

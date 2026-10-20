@@ -24,21 +24,45 @@ $pageTitle = 'Login';
     <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css?v=2">
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: { sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
-                    colors: { primary: {
-                        50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',400:'#818cf8',
-                        500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#1e1b4b'
-                    } }
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50:  '#ecfeff',
+                            100: '#cffafe',
+                            200: '#a5f3fc',
+                            300: '#67e8f9',
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            700: '#0e7490',
+                            800: '#155e75',
+                            900: '#0C4A8C',
+                        },
+                        accent: {
+                            DEFAULT: '#2DD4BF',
+                            light: '#5eead4',
+                            dark: '#14b8a6',
+                        },
+                    },
+                    boxShadow: {
+                        card: '0 1px 3px rgba(12, 74, 140, .06), 0 1px 2px rgba(12, 74, 140, .04)',
+                    },
                 }
             }
         }
     </script>
     <style type="text/tailwindcss">
-        .login-input { @apply w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm placeholder:text-slate-400 bg-slate-50/60 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 transition-all; }
-        .login-bg { @apply bg-primary-900; }
-        .login-grid { background-image: radial-gradient(rgba(255,255,255,0.15) 1px, transparent 1px); background-size: 24px 24px; }
+        .login-input { @apply w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm placeholder:text-slate-400 bg-slate-50/60 focus:bg-white focus:outline-none focus:ring-4 focus:ring-cyan-500/15 focus:border-cyan-500 transition-all; }
+        .login-bg {
+            @apply bg-primary-900;
+            background: linear-gradient(135deg, #0C4A8C 0%, #0e3a6e 50%, #082d56 100%);
+        }
+        .login-grid { background-image: radial-gradient(rgba(45, 212, 191, 0.15) 1px, transparent 1px); background-size: 24px 24px; }
         .shadow-card { box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08); }
         .glass { @apply bg-white/10 backdrop-blur-md border border-white/20; }
     </style>
@@ -51,13 +75,20 @@ $pageTitle = 'Login';
     <div class="hidden lg:flex lg:w-[46%] login-bg relative overflow-hidden flex-col justify-between p-12 text-white">
         <div class="absolute inset-0 login-grid pointer-events-none"></div>
 
-        <div class="relative flex items-center gap-3">
-            <div class="w-11 h-11 bg-gradient-to-br from-amber-300 to-yellow-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/25">
-                <i class="bi bi-sun-fill text-primary-900 text-xl"></i>
+        <div class="relative flex items-center gap-4">
+            <!-- Container logo dengan glow -->
+            <div class="relative w-16 h-16 flex-shrink-0">
+                <!-- Glow effect -->
+                <div class="absolute inset-0 bg-gradient-to-br from-cyan-400/40 to-blue-500/40 rounded-2xl blur-xl"></div>
+                <!-- Container -->
+                <div class="relative w-full h-full bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-md rounded-2xl border border-white/25 flex items-center justify-center p-2 shadow-2xl">
+                    <img src="<?= BASE_URL ?>/assets/img/Logo-elp.png" alt="Energy Lima Pilar"
+                        class="w-full h-full object-contain drop-shadow-xl">
+                </div>
             </div>
             <div>
-                <div class="font-bold tracking-tight leading-tight">Sistem PLTS</div>
-                <div class="text-indigo-300/70 text-xs">PT Energy Lima Pilar</div>
+                <div class="font-bold text-xl tracking-tight leading-tight text-white">Sistem PLTS</div>
+                <div class="text-cyan-300/80 text-sm mt-0.5 font-medium">PT Energy Lima Pilar</div>
             </div>
         </div>
 
@@ -95,11 +126,17 @@ $pageTitle = 'Login';
         <div class="w-full max-w-md">
             <!-- Logo versi mobile -->
             <div class="lg:hidden text-center mb-8">
-                <div class="w-14 h-14 bg-gradient-to-br from-amber-300 to-yellow-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-amber-500/20">
-                    <i class="bi bi-sun-fill text-primary-900 text-2xl"></i>
+                <div class="relative w-24 h-24 mx-auto mb-4">
+                    <!-- Glow effect besar -->
+                    <div class="absolute inset-0 bg-gradient-to-br from-cyan-400/50 to-blue-500/50 rounded-3xl blur-2xl"></div>
+                    <!-- Container -->
+                    <div class="relative w-full h-full bg-gradient-to-br from-white/90 to-white/70 backdrop-blur-md rounded-3xl border border-white/50 flex items-center justify-center p-3 shadow-2xl">
+                        <img src="<?= BASE_URL ?>/assets/img/Logo-elp.png" alt="Energy Lima Pilar"
+                            class="w-full h-full object-contain drop-shadow-xl">
+                    </div>
                 </div>
-                <h1 class="text-primary-900 text-lg font-bold">Sistem Monitoring PLTS</h1>
-                <p class="text-slate-500 text-sm mt-0.5">PT Energy Lima Pilar</p>
+                <h1 class="text-slate-900 text-xl font-bold tracking-tight">Sistem Monitoring PLTS</h1>
+                <p class="text-slate-500 text-sm mt-1">PT Energy Lima Pilar</p>
             </div>
 
             <div class="bg-white rounded-3xl shadow-card border border-slate-200/70 p-8 sm:p-10">
