@@ -23,14 +23,40 @@ include __DIR__ . '/../../includes/sidebar.php';
 ?>
 
 <div class="max-w-7xl mx-auto">
-    <!-- Header Halaman Sesuai Tema Web Anda -->
-    <div class="flex items-center gap-3 mb-5">
-        <a href="<?= BASE_URL ?>/pages/laporan/index.php" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-            <i class="bi bi-arrow-left text-slate-500"></i>
-        </a>
-        <div>
-            <h2 class="text-lg font-bold text-slate-900 tracking-tight">Input Laporan Harian Lapangan</h2>
-            <p class="text-sm text-slate-400">Daily report teknisi & pemantauan progres proyek PLTS</p>
+    <!-- Header Halaman -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div class="flex items-center gap-3">
+            <a href="<?= BASE_URL ?>/pages/laporan/index.php" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                <i class="bi bi-arrow-left text-slate-500"></i>
+            </a>
+            <div>
+                <h2 class="text-lg font-bold text-slate-900 tracking-tight">Input Laporan Harian Lapangan</h2>
+                <p class="text-sm text-slate-400">Daily report teknisi & pemantauan progres proyek PLTS</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <span id="draftStatusBadge" class="text-xs text-slate-400 hidden items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-xl">
+                <i class="bi bi-cloud-check text-emerald-500"></i> <span id="draftStatusText">Draf tersimpan otomatis</span>
+            </span>
+            <button type="button" onclick="resetDraftForm()" class="btn-secondary btn-sm text-xs" title="Bersihkan draf & kembalikan ke awal">
+                <i class="bi bi-arrow-counterclockwise"></i> Reset Form
+            </button>
+        </div>
+    </div>
+
+    <!-- Banner Pemulihan Draf (Muncul jika ada draf di localStorage) -->
+    <div id="draftRestoreBanner" class="hidden mb-5 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5 text-xs text-amber-800">
+            <i class="bi bi-clock-history text-base text-amber-600"></i>
+            <span>Ditemukan draf laporan yang belum dikirim. Apakah Anda ingin memulihkan ketikan terakhir Anda?</span>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+            <button type="button" onclick="terapkanDraftTersimpan()" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors">
+                Pulihkan Draf
+            </button>
+            <button type="button" onclick="abaikanDraftTersimpan()" class="px-2.5 py-1.5 rounded-lg bg-white border border-amber-200 text-amber-700 text-xs font-semibold hover:bg-amber-100 transition-colors">
+                Abaikan
+            </button>
         </div>
     </div>
 
@@ -141,7 +167,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                             <span class="w-6 h-6 rounded bg-amber-100 text-amber-600 flex items-center justify-center text-xs font-bold">2</span>
                             <h3 class="text-sm font-bold text-slate-800">Personel Lapangan (Manpower)</h3>
                         </div>
-                        <span class="badge-modern bg-slate-100 text-slate-700 border border-slate-200">Total: <span id="totalManpower">8</span></span>
+                        <span class="badge-modern bg-slate-100 text-slate-700 border border-slate-200">Total: <span id="totalManpower">8</span> Orang</span>
                     </div>
                     
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -165,9 +191,9 @@ include __DIR__ . '/../../includes/sidebar.php';
                     </div>
                 </div>
 
-                <!-- 3. Activity Progress -->
+                <!-- 3. Activity Progress (Dilengkapi Tombol Muat Next Plan Kemarin) -->
                 <div class="card p-6">
-                    <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-4 border-b border-slate-100 pb-3">
                         <div class="flex items-center gap-2">
                             <span class="w-6 h-6 rounded bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold">3</span>
                             <div>
@@ -175,7 +201,13 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 <p class="text-xs text-slate-400 mt-0.5">Ketik poin pengerjaan, centang jika selesai.</p>
                             </div>
                         </div>
-                        <span class="badge-modern bg-emerald-50 text-emerald-700 border border-emerald-200" id="badgeRealisasiHarian">7/8 (88%)</span>
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="btnLoadLastPlan" onclick="muatNextPlanKemarin()"
+                                class="hidden px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold transition-colors items-center gap-1">
+                                <i class="bi bi-arrow-repeat"></i> Muat Next Plan Kemarin
+                            </button>
+                            <span class="badge-modern bg-emerald-50 text-emerald-700 border border-emerald-200" id="badgeRealisasiHarian">7/8 (88%)</span>
+                        </div>
                     </div>
 
                     <div class="space-y-3" id="containerActivity">
@@ -233,16 +265,16 @@ include __DIR__ . '/../../includes/sidebar.php';
                     </button>
                 </div>
 
-                <!-- 5. Progres & Foto -->
+                <!-- 5. Progres & Dropzone Foto dengan Kompresi Otomatis -->
                 <div class="card p-6">
                     <div class="flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
                         <span class="w-6 h-6 rounded bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">5</span>
                         <h3 class="text-sm font-bold text-slate-800">Update Progres & Dokumentasi</h3>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                         <div>
                             <label class="form-label">Status Laporan Hari Ini</label>
-                            <select name="status_pengerjaan" class="form-select">
+                            <select name="status_pengerjaan" id="status_pengerjaan" class="form-select">
                                 <option value="dalam_proses">Dalam Proses</option>
                                 <option value="selesai">Selesai (Target Tuntas)</option>
                                 <option value="terkendala">Terkendala</option>
@@ -263,20 +295,36 @@ include __DIR__ . '/../../includes/sidebar.php';
                         </div>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="form-label">Upload Foto Dokumentasi Lapangan</label>
-                        <input type="file" name="foto_lapangan[]" class="form-input" accept="image/*" multiple>
-                        <p class="text-xs text-slate-400 mt-1">Bisa pilih lebih dari 1 foto sekaligus.</p>
+                    <!-- Dropzone Upload Foto dengan Client-Side Compression -->
+                    <div class="mb-5">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="form-label mb-0">Upload Foto Dokumentasi Lapangan</label>
+                            <span id="infoKompresiFoto" class="text-[11px] font-semibold text-emerald-600 hidden"></span>
+                        </div>
+
+                        <div id="dropzoneFoto"
+                             onclick="document.getElementById('inputFotoLapangan').click()"
+                             class="border-2 border-dashed border-slate-200 hover:border-primary-400 bg-slate-50/60 hover:bg-primary-50/30 rounded-2xl p-6 text-center cursor-pointer transition-all">
+                            <div class="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center mx-auto mb-2.5">
+                                <i class="bi bi-cloud-arrow-up text-2xl"></i>
+                            </div>
+                            <p class="text-sm font-semibold text-slate-700">Klik atau seret foto dokumentasi ke sini</p>
+                            <p class="text-xs text-slate-400 mt-1">Otomatis dikompresi agar hemat kuota & cepat diunggah (JPG, PNG, WebP)</p>
+                            <input type="file" name="foto_lapangan[]" id="inputFotoLapangan" class="hidden" accept="image/*" multiple onchange="handleFotoSelect(this.files)">
+                        </div>
+
+                        <!-- Grid Preview Foto Sebelum Upload -->
+                        <div id="previewFotoContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 hidden"></div>
                     </div>
 
                     <div class="mb-5">
                         <label class="form-label">Catatan Tambahan / Kendala <span class="text-slate-400 font-normal">(Opsional)</span></label>
-                        <textarea name="deskripsi" class="form-textarea" rows="2" placeholder="Tulis kendala di lapangan..."></textarea>
+                        <textarea name="deskripsi" id="deskripsi" class="form-textarea" rows="2" placeholder="Tulis kendala di lapangan..." oninput="simpanDraftOtomatis()"></textarea>
                     </div>
 
                     <div class="flex gap-3 pt-4 border-t border-slate-100">
                         <a href="<?= BASE_URL ?>/pages/laporan/index.php" class="btn-secondary flex-1 justify-center">Batal</a>
-                        <button type="submit" class="btn-primary flex-1 justify-center shadow-lg shadow-primary-600/30">
+                        <button type="submit" id="btnSubmitLaporan" class="btn-primary flex-1 justify-center shadow-lg shadow-primary-600/30">
                             <i class="bi bi-save"></i> Simpan Laporan
                         </button>
                     </div>
