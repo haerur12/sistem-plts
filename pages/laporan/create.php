@@ -1,372 +1,336 @@
 <?php
-$pageTitle    = 'Unggah Laporan';
-$pageSubtitle = 'Form Laporan';
-$currentPage  = 'laporan';
+// pages/laporan/create.php
+$pageTitle   = 'Input Laporan Lapangan';
+$currentPage = 'laporan';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/auth.php';
 requireRole(['admin','manajer_proyek','teknisi_lapangan']);
 
-$db          = db();
-$user        = currentUser();
-$selectedP   = (int)($_GET['proyek_id'] ?? 0);
-$proyeks     = $db->query("
-    SELECT * FROM proyek
-    WHERE status IN ('survei','perencanaan','instalasi')
-    ORDER BY nama_proyek ASC
+$db = db();
+
+$proyek_list = $db->query("
+    SELECT p.*, pel.nama_pelanggan 
+    FROM proyek p 
+    JOIN pelanggan pel ON p.pelanggan_id = pel.id 
+    ORDER BY p.created_at DESC
 ")->fetchAll();
+
+$jadwal_list = $db->query("SELECT * FROM jadwal ORDER BY tanggal_mulai ASC")->fetchAll();
 
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
 ?>
 
-<div class="max-w-2xl mx-auto">
+<div class="max-w-7xl mx-auto">
+    <!-- Header Halaman Sesuai Tema Web Anda -->
     <div class="flex items-center gap-3 mb-5">
         <a href="<?= BASE_URL ?>/pages/laporan/index.php" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
             <i class="bi bi-arrow-left text-slate-500"></i>
         </a>
         <div>
-            <h2 class="text-lg font-semibold text-slate-800">Unggah Laporan Lapangan</h2>
-            <p class="text-sm text-slate-400">Dokumentasi perkembangan pengerjaan proyek</p>
+            <h2 class="text-lg font-bold text-slate-900 tracking-tight">Input Laporan Harian Lapangan</h2>
+            <p class="text-sm text-slate-400">Daily report teknisi & pemantauan progres proyek PLTS</p>
         </div>
     </div>
 
-    <form method="POST" action="<?= BASE_URL ?>/api/laporan/store.php"
-        enctype="multipart/form-data" id="formLaporan" novalidate>
+    <form action="<?= BASE_URL ?>/api/laporan/store.php" method="POST" enctype="multipart/form-data" id="formLaporan">
         <?= csrfField() ?>
 
-        <!-- Step Indicator -->
-        <div class="flex items-center gap-0 mb-6">
-            <?php $steps = ['Info Laporan','Catatan Lapangan','Foto Dokumentasi']; ?>
-            <?php foreach ($steps as $i => $step): ?>
-            <div class="flex items-center <?= $i < count($steps)-1 ? 'flex-1' : '' ?>">
-                <div class="flex flex-col items-center">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold
-                        step-circle transition-all"
-                        id="stepCircle<?= $i+1 ?>"
-                        style="<?= $i===0 ? 'background:#1a237e;color:#fff' : 'background:#f1f5f9;color:#94a3b8' ?>">
-                        <?= $i+1 ?>
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+            <!-- KOLOM KIRI: FORM INPUT -->
+            <div class="xl:col-span-7 space-y-6">
+                
+                <!-- 1. Informasi Proyek & Cuaca -->
+                <div class="card p-6">
+                    <div class="flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
+                        <span class="w-6 h-6 rounded bg-primary-100 text-primary-600 flex items-center justify-center text-xs font-bold">1</span>
+                        <h3 class="text-sm font-bold text-slate-800">Proyek, Lokasi & Cuaca</h3>
                     </div>
-                    <span class="text-xs mt-1 font-medium step-label"
-                        id="stepLabel<?= $i+1 ?>"
-                        style="<?= $i===0 ? 'color:#1a237e' : 'color:#94a3b8' ?>">
-                        <?= $step ?>
-                    </span>
-                </div>
-                <?php if ($i < count($steps)-1): ?>
-                <div class="flex-1 h-0.5 mx-2 mt-0 transition-all step-line" id="stepLine<?= $i+1 ?>"
-                    style="background:#e2e8f0; margin-bottom:16px"></div>
-                <?php endif; ?>
-            </div>
-            <?php endforeach; ?>
-        </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="form-label">Pilih Proyek PLTS <span class="text-red-500">*</span></label>
+                            <select name="proyek_id" id="proyek_id" class="form-select" required onchange="onProyekChange()">
+                                <option value="">-- Pilih Proyek --</option>
+                                <?php foreach ($proyek_list as $p): ?>
+                                    <option value="<?= $p['id'] ?>"
+                                        data-nama="<?= sanitize($p['nama_proyek']) ?>"
+                                        data-klien="<?= sanitize($p['nama_pelanggan']) ?>"
+                                        data-mulai="<?= $p['tanggal_mulai'] ?>"
+                                        data-selesai="<?= $p['tanggal_selesai'] ?>"
+                                        data-progres="<?= $p['progres'] ?>">
+                                        <?= sanitize($p['nama_proyek']) ?> — <?= sanitize($p['nama_pelanggan']) ?> (<?= $p['progres'] ?>%)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
 
-        <!-- STEP 1 — Info Laporan -->
-        <div id="step1" class="card p-6 mb-4">
-            <h3 class="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-                <span class="w-6 h-6 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center text-xs font-bold">1</span>
-                Informasi Laporan
-            </h3>
-            <div class="space-y-4">
-                <div>
-                    <label class="form-label">Proyek <span class="text-red-500">*</span></label>
-                    <select name="proyek_id" id="proyekSelect" class="form-select" required>
-                        <option value="">-- Pilih Proyek --</option>
-                        <?php foreach ($proyeks as $p): ?>
-                        <option value="<?= $p['id'] ?>" <?= $selectedP===$p['id']?'selected':'' ?>>
-                            <?= sanitize($p['nama_proyek']) ?>
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div>
-                    <label class="form-label">Judul Laporan <span class="text-red-500">*</span></label>
-                    <input type="text" name="judul_laporan" id="judulInput"
-                        class="form-input" placeholder="Contoh: Laporan Survei Lokasi Hari ke-1" required>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="form-label">Status Pengerjaan <span class="text-red-500">*</span></label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <?php
-                            $statuses = [
-                                'belum_mulai'  => ['icon'=>'bi-hourglass',        'label'=>'Belum Mulai', 'color'=>'slate'],
-                                'dalam_proses' => ['icon'=>'bi-play-circle',      'label'=>'Dalam Proses','color'=>'blue'],
-                                'selesai'      => ['icon'=>'bi-check-circle',     'label'=>'Selesai',     'color'=>'green'],
-                                'terkendala'   => ['icon'=>'bi-exclamation-circle','label'=>'Terkendala', 'color'=>'red'],
-                            ];
-                            foreach ($statuses as $val => $s): ?>
-                            <label class="status-option flex items-center gap-2 p-2.5 border-2 rounded-xl cursor-pointer transition-all
-                                <?= $val==='dalam_proses' ? 'border-blue-500 bg-blue-50' : 'border-slate-100 hover:border-slate-200' ?>">
-                                <input type="radio" name="status_pengerjaan" value="<?= $val ?>"
-                                    <?= $val==='dalam_proses'?'checked':'' ?> class="sr-only">
-                                <i class="bi <?= $s['icon'] ?> text-<?= $s['color'] ?>-500 text-sm"></i>
-                                <span class="text-xs font-medium text-slate-700"><?= $s['label'] ?></span>
-                            </label>
-                            <?php endforeach; ?>
+                        <!-- Info Timeline Proyek -->
+                        <div id="infoTimelineBox" class="hidden bg-sky-50 border border-sky-200 rounded-xl p-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs font-bold text-sky-800 uppercase tracking-wider">Acuan Timeline Kontrak</span>
+                                <span class="badge-modern bg-white border border-slate-200 text-slate-700" id="badgeStatusTimeline">-</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mb-2" id="teksRentangTanggal">-</p>
+                            <div class="flex justify-between text-sm">
+                                <span>Target Waktu: <strong class="text-sky-700" id="targetTimelinePersen">0%</strong></span>
+                                <span>Progres Aktual: <strong class="text-emerald-600" id="aktualProgresTeks">0%</strong></span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="form-label">Acuan Jadwal <span class="text-slate-400 font-normal">(Opsional)</span></label>
+                                <select name="jadwal_id" id="jadwal_id" class="form-select">
+                                    <option value="">-- Fleksibel / Sesuai Lapangan --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label">Status Tahapan Jadwal</label>
+                                <select name="status_jadwal" class="form-select">
+                                    <option value="berjalan">Berjalan</option>
+                                    <option value="selesai">Selesai</option>
+                                    <option value="ditunda">Ditunda</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="form-label">Judul / Jenis Pekerjaan <span class="text-red-500">*</span></label>
+                                <input type="text" name="judul_laporan" id="judul_laporan" class="form-input" 
+                                       value="Maintenance Solar PV Rooftop" required oninput="updatePreview()">
+                            </div>
+                            <div>
+                                <label class="form-label">Area / Gedung <span class="text-red-500">*</span></label>
+                                <input type="text" name="area_kerja" id="area_kerja" class="form-input" 
+                                       value="Building 4" placeholder="Contoh: Building 4" required oninput="updatePreview()">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="form-label">Tanggal Laporan <span class="text-red-500">*</span></label>
+                                <input type="date" name="tanggal_laporan" id="tanggal_laporan" class="form-input" 
+                                       value="<?= date('Y-m-d') ?>" required onchange="onProyekChange(); updatePreview();">
+                            </div>
+                            <div>
+                                <label class="form-label">Jam (Cuaca)</label>
+                                <input type="text" name="jam_cuaca" id="jam_cuaca" class="form-input" 
+                                       value="08.00 - 17.00" oninput="updatePreview()">
+                            </div>
+                            <div>
+                                <label class="form-label">Kondisi Cuaca</label>
+                                <select name="kondisi_cuaca" id="kondisi_cuaca" class="form-select" onchange="updatePreview()">
+                                    <option value="Cerah">Cerah</option>
+                                    <option value="Cerah Berawan">Cerah Berawan</option>
+                                    <option value="Mendung">Mendung</option>
+                                    <option value="Hujan Ringan">Hujan Ringan</option>
+                                    <option value="Hujan Deras">Hujan Deras</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
-                    <div>
-                        <label class="form-label">Tanggal Laporan <span class="text-red-500">*</span></label>
-                        <input type="date" name="tanggal_laporan" class="form-input"
-                            value="<?= date('Y-m-d') ?>" required>
+                </div>
+
+                <!-- 2. Manpower -->
+                <div class="card p-6">
+                    <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded bg-amber-100 text-amber-600 flex items-center justify-center text-xs font-bold">2</span>
+                            <h3 class="text-sm font-bold text-slate-800">Personel Lapangan (Manpower)</h3>
+                        </div>
+                        <span class="badge-modern bg-slate-100 text-slate-700 border border-slate-200">Total: <span id="totalManpower">8</span></span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <?php
+                        $roles_mp = [
+                            'mp_pm'         => ['1. Project Manager', 0], 'mp_sm'         => ['2. Site Manager', 1],
+                            'mp_pengawas'   => ['3. Pengawas Teknik', 1], 'mp_admin'      => ['4. Admin', 0],
+                            'mp_hse'        => ['5. HSE / Safetyman', 1], 'mp_scaffolder' => ['6. Scaffolder', 0],
+                            'mp_teknisi'    => ['7. Teknisi', 1],         'mp_helper'     => ['8. Helper', 4],
+                        ];
+                        foreach ($roles_mp as $name => $info): ?>
+                        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 hover:border-primary-300 transition-colors">
+                            <label class="block text-[11px] font-bold text-slate-500 mb-1.5 truncate"><?= $info[0] ?></label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" name="<?= $name ?>" id="<?= $name ?>" class="form-input py-1.5 text-sm mp-input" 
+                                       min="0" value="<?= $info[1] ?>" oninput="hitungManpower()">
+                                <span class="text-xs text-slate-400 font-medium">Org</span>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <!-- 3. Activity Progress -->
+                <div class="card p-6">
+                    <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold">3</span>
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-800">Activity Progress</h3>
+                                <p class="text-xs text-slate-400 mt-0.5">Ketik poin pengerjaan, centang jika selesai.</p>
+                            </div>
+                        </div>
+                        <span class="badge-modern bg-emerald-50 text-emerald-700 border border-emerald-200" id="badgeRealisasiHarian">7/8 (88%)</span>
+                    </div>
+
+                    <div class="space-y-3" id="containerActivity">
+                        <?php
+                        $contoh_activity = [
+                            ['teks' => 'Pengukuran Volt DC', 'done' => 1],
+                            ['teks' => 'Pengukuran Ampere DC', 'done' => 1],
+                            ['teks' => 'Pengukuran Volt AC Inverter', 'done' => 1],
+                            ['teks' => 'Pengukuran Volt AC Combiner', 'done' => 1],
+                            ['teks' => 'Pengukuran Grounding', 'done' => 1],
+                            ['teks' => 'Cleaning Inverter', 'done' => 1],
+                            ['teks' => 'Cleaning Panel DC Combiner', 'done' => 1],
+                            ['teks' => 'Pengukuran Ampere Inverter 3 & 4', 'done' => 0],
+                        ];
+                        foreach ($contoh_activity as $i => $act):
+                        ?>
+                        <div class="flex items-center gap-2 activity-row group">
+                            <span class="text-sm font-bold text-slate-400 w-5 text-right nomor-activity"><?= $i + 1 ?>.</span>
+                            <input type="text" name="activity_item[<?= $i ?>]" class="form-input flex-1 activity-text" 
+                                   value="<?= sanitize($act['teks']) ?>" placeholder="Poin pekerjaan..." oninput="updatePreview()">
+                            <label class="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors <?= $act['done'] ? 'bg-emerald-50 border-emerald-200' : '' ?>">
+                                <input type="checkbox" name="activity_done[<?= $i ?>]" value="1" class="w-4 h-4 text-emerald-600 rounded activity-check" <?= $act['done'] ? 'checked' : '' ?> onchange="updatePreview(); this.parentElement.classList.toggle('bg-emerald-50', this.checked); this.parentElement.classList.toggle('border-emerald-200', this.checked);">
+                                <span class="text-xs font-bold text-slate-600">Selesai</span>
+                            </label>
+                            <button type="button" class="p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100" onclick="hapusBarisActivity(this)"><i class="bi bi-trash"></i></button>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <button type="button" class="btn-secondary btn-sm mt-3" onclick="tambahBarisActivity()">
+                        <i class="bi bi-plus-lg"></i> Tambah Pekerjaan
+                    </button>
+                </div>
+
+                <!-- 4. Next Plan -->
+                <div class="card p-6">
+                    <div class="flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
+                        <span class="w-6 h-6 rounded bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold">4</span>
+                        <h3 class="text-sm font-bold text-slate-800">Next Plan (Rencana Selanjutnya)</h3>
+                    </div>
+                    <div class="space-y-3" id="containerNextPlan">
+                        <?php
+                        $contoh_next = ['Pengukuran Ampere Inverter 1 & 2', 'Pengerjaan Sample tagging Tray'];
+                        foreach ($contoh_next as $j => $np):
+                        ?>
+                        <div class="flex items-center gap-2 nextplan-row group">
+                            <span class="text-sm font-bold text-slate-400 w-5 text-right nomor-nextplan"><?= $j + 1 ?>.</span>
+                            <input type="text" name="next_plan_item[]" class="form-input flex-1 nextplan-text" 
+                                   value="<?= sanitize($np) ?>" placeholder="Rencana selanjutnya..." oninput="updatePreview()">
+                            <button type="button" class="p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100" onclick="hapusBarisNextPlan(this)"><i class="bi bi-trash"></i></button>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <button type="button" class="btn-secondary btn-sm mt-3" onclick="tambahBarisNextPlan()">
+                        <i class="bi bi-plus-lg"></i> Tambah Rencana
+                    </button>
+                </div>
+
+                <!-- 5. Progres & Foto -->
+                <div class="card p-6">
+                    <div class="flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
+                        <span class="w-6 h-6 rounded bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">5</span>
+                        <h3 class="text-sm font-bold text-slate-800">Update Progres & Dokumentasi</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-4">
+                        <div>
+                            <label class="form-label">Status Laporan Hari Ini</label>
+                            <select name="status_pengerjaan" class="form-select">
+                                <option value="dalam_proses">Dalam Proses</option>
+                                <option value="selesai">Selesai (Target Tuntas)</option>
+                                <option value="terkendala">Terkendala</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label flex justify-between">
+                                <span>Update Total Progres (%)</span>
+                                <strong id="labelSliderProgres" class="text-primary-700">65%</strong>
+                            </label>
+                            <input type="range" name="progres_proyek" id="progres_proyek" class="w-full mt-2" 
+                                   min="0" max="100" value="65" oninput="onSliderProgresChange(this.value)">
+                            <div class="flex justify-between text-xs text-slate-400 mt-1">
+                                <span>0%</span>
+                                <span id="statusKecepatanProyek" class="font-bold text-primary-600">-</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Upload Foto Dokumentasi Lapangan</label>
+                        <input type="file" name="foto_lapangan[]" class="form-input" accept="image/*" multiple>
+                        <p class="text-xs text-slate-400 mt-1">Bisa pilih lebih dari 1 foto sekaligus.</p>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="form-label">Catatan Tambahan / Kendala <span class="text-slate-400 font-normal">(Opsional)</span></label>
+                        <textarea name="deskripsi" class="form-textarea" rows="2" placeholder="Tulis kendala di lapangan..."></textarea>
+                    </div>
+
+                    <div class="flex gap-3 pt-4 border-t border-slate-100">
+                        <a href="<?= BASE_URL ?>/pages/laporan/index.php" class="btn-secondary flex-1 justify-center">Batal</a>
+                        <button type="submit" class="btn-primary flex-1 justify-center shadow-lg shadow-primary-600/30">
+                            <i class="bi bi-save"></i> Simpan Laporan
+                        </button>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- STEP 2 — Catatan Lapangan -->
-        <div id="step2" class="card p-6 mb-4">
-            <h3 class="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-                <span class="w-6 h-6 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center text-xs font-bold">2</span>
-                Catatan Lapangan
-            </h3>
-            <div>
-                <label class="form-label">Deskripsi / Catatan <span class="text-red-500">*</span></label>
-                <textarea name="deskripsi" id="deskripsiInput" class="form-input" rows="6"
-                    placeholder="Tuliskan secara detail:&#10;• Kondisi lokasi saat ini&#10;• Pekerjaan yang sudah dilakukan&#10;• Kendala yang dihadapi&#10;• Rencana pekerjaan berikutnya"
-                    required></textarea>
-                <div class="flex justify-between mt-1.5">
-                    <span class="text-xs text-slate-400">Minimal 20 karakter</span>
-                    <span class="text-xs text-slate-400" id="charCount">0 karakter</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- STEP 3 — Upload Foto -->
-        <div id="step3" class="card p-6 mb-4">
-            <h3 class="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-                <span class="w-6 h-6 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center text-xs font-bold">3</span>
-                Foto Dokumentasi
-                <span class="text-xs font-normal text-slate-400">(Opsional, max 10 foto)</span>
-            </h3>
-
-            <!-- Drop Zone -->
-            <div id="dropZone"
-                class="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center
-                hover:border-primary-400 hover:bg-primary-50/30 transition-all cursor-pointer
-                relative group"
-                onclick="document.getElementById('fotoInput').click()">
-
-                <div id="dropZoneContent">
-                    <div class="w-16 h-16 bg-slate-100 group-hover:bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-colors">
-                        <i class="bi bi-cloud-upload text-3xl text-slate-400 group-hover:text-primary-600 transition-colors"></i>
+            <!-- KOLOM KANAN: PREVIEW WHATSAPP -->
+            <div class="xl:col-span-5">
+                <div class="card p-0 overflow-hidden sticky top-6 border-0 shadow-lg shadow-slate-200/50">
+                    <!-- WA Header -->
+                    <div class="bg-[#075e54] px-4 py-3 flex items-center justify-between text-white">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                                <i class="bi bi-whatsapp text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-sm leading-tight">Preview WhatsApp</h3>
+                                <p class="text-[11px] opacity-80">PT Energy Lima Pilar</p>
+                            </div>
+                        </div>
+                        <button type="button" class="bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors" onclick="copyKeWhatsApp()">
+                            Copy Teks
+                        </button>
                     </div>
-                    <h4 class="text-sm font-semibold text-slate-700 mb-1">Drag & drop foto di sini</h4>
-                    <p class="text-xs text-slate-400 mb-3">atau klik untuk pilih dari galeri / kamera</p>
-                    <div class="inline-flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm text-slate-600 font-medium shadow-sm">
-                        <i class="bi bi-folder2-open text-primary-600"></i> Pilih Foto
+
+                    <!-- WA Body -->
+                    <div class="p-4" style="background-color: #efeae2; background-image: radial-gradient(#d1cbbf 1px, transparent 1px); background-size: 18px 18px;">
+                        <select id="salam_pembuka" class="form-select form-select-sm mb-3 shadow-sm border-0" onchange="updatePreview()">
+                            <option value="Selamat malam">Salam: Selamat malam</option>
+                            <option value="Selamat sore">Salam: Selamat sore</option>
+                            <option value="Selamat pagi">Salam: Selamat pagi</option>
+                        </select>
+
+                        <!-- WA Bubble -->
+                        <div class="bg-[#d9fdd3] text-[#111b21] p-3 rounded-xl rounded-tr-none shadow-sm relative text-[13.5px] leading-relaxed" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                            <pre id="waOutput" class="whitespace-pre-wrap font-inherit m-0"></pre>
+                            <div class="text-right mt-1 opacity-60 text-[10px]">
+                                <?= date('H:i') ?> <i class="bi bi-check-all text-info"></i>
+                            </div>
+                        </div>
+
+                        <div id="copyAlert" class="mt-3 bg-emerald-500 text-white text-xs font-bold p-2 rounded-lg text-center shadow-md hidden animate-pulse">
+                            <i class="bi bi-clipboard-check"></i> Teks berhasil disalin!
+                        </div>
                     </div>
-                    <p class="text-xs text-slate-300 mt-3">JPG, PNG · Maks 5MB per foto · Maks 10 foto</p>
-                </div>
-
-                <!-- Drag overlay -->
-                <div id="dropOverlay"
-                    class="hidden absolute inset-0 rounded-2xl bg-primary-50 border-2 border-primary-400
-                    flex flex-col items-center justify-center">
-                    <i class="bi bi-cloud-upload text-4xl text-primary-500 mb-2"></i>
-                    <p class="text-sm font-semibold text-primary-700">Lepaskan untuk upload!</p>
-                </div>
-
-                <input type="file" name="foto[]" id="fotoInput" multiple
-                    accept="image/jpeg,image/png,image/jpg" class="hidden">
-            </div>
-
-            <!-- Preview Grid -->
-            <div id="previewGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4 hidden"></div>
-
-            <!-- Upload Progress -->
-            <div id="uploadProgress" class="hidden mt-4">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs text-slate-500" id="progressLabel">Memproses foto...</span>
-                    <span class="text-xs font-semibold text-primary-700" id="progressPct">0%</span>
-                </div>
-                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div id="progressBar" class="h-full bg-primary-600 rounded-full transition-all" style="width:0%"></div>
                 </div>
             </div>
-        </div>
-
-        <!-- Submit -->
-        <div class="flex gap-3">
-            <a href="<?= BASE_URL ?>/pages/laporan/index.php" class="btn-secondary flex-1 justify-center">
-                Batal
-            </a>
-            <button type="submit" class="btn-primary flex-1 justify-center" id="submitBtn">
-                <i class="bi bi-upload"></i> Unggah Laporan
-            </button>
         </div>
     </form>
 </div>
 
-<style>
-.status-option input:checked + * { display: contents; }
-.status-option:has(input:checked) {
-    border-color: #3b82f6 !important;
-    background: #eff6ff !important;
-}
-.status-option:has(input[value="selesai"]:checked) { border-color:#22c55e !important; background:#f0fdf4 !important; }
-.status-option:has(input[value="terkendala"]:checked) { border-color:#ef4444 !important; background:#fef2f2 !important; }
-.status-option:has(input[value="belum_mulai"]:checked) { border-color:#94a3b8 !important; background:#f8fafc !important; }
-</style>
-
 <script>
-// ============================================================
-// CHARACTER COUNT
-// ============================================================
-const deskripsi  = document.getElementById('deskripsiInput');
-const charCount  = document.getElementById('charCount');
-deskripsi?.addEventListener('input', function() {
-    const len = this.value.length;
-    charCount.textContent = len + ' karakter';
-    charCount.style.color = len < 20 ? '#ef4444' : '#22c55e';
-});
-
-// ============================================================
-// DRAG & DROP UPLOAD
-// ============================================================
-const dropZone    = document.getElementById('dropZone');
-const dropOverlay = document.getElementById('dropOverlay');
-const fotoInput   = document.getElementById('fotoInput');
-const previewGrid = document.getElementById('previewGrid');
-let   uploadedFiles = [];
-
-// Drag events
-['dragenter','dragover'].forEach(ev => {
-    dropZone.addEventListener(ev, e => {
-        e.preventDefault();
-        dropOverlay.classList.remove('hidden');
-    });
-});
-['dragleave','dragend'].forEach(ev => {
-    dropZone.addEventListener(ev, () => {
-        dropOverlay.classList.add('hidden');
-    });
-});
-dropZone.addEventListener('drop', e => {
-    e.preventDefault();
-    dropOverlay.classList.add('hidden');
-    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-    addFiles(files);
-});
-
-// File input change
-fotoInput.addEventListener('change', function() {
-    addFiles(Array.from(this.files));
-    this.value = ''; // Reset agar bisa pilih file sama lagi
-});
-
-// Tambahkan file ke preview
-function addFiles(files) {
-    const progress = document.getElementById('uploadProgress');
-    const bar      = document.getElementById('progressBar');
-    const pct      = document.getElementById('progressPct');
-    const label    = document.getElementById('progressLabel');
-
-    // Max 10 foto
-    const remaining = 10 - uploadedFiles.length;
-    files = files.slice(0, remaining);
-    if (!files.length) return;
-
-    progress.classList.remove('hidden');
-    previewGrid.classList.remove('hidden');
-
-    let loaded = 0;
-    files.forEach((file, idx) => {
-        // Cek ukuran (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            Toast?.show(`File "${file.name}" terlalu besar (maks 5MB)`, 'warning');
-            loaded++;
-            updateProgress(loaded, files.length, bar, pct, label, progress);
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = e => {
-            uploadedFiles.push(file);
-            renderPreview(e.target.result, file.name, uploadedFiles.length - 1);
-            loaded++;
-            updateProgress(loaded, files.length, bar, pct, label, progress);
-        };
-        reader.readAsDataURL(file);
-    });
-
-    // Update input files
-    syncFilesInput();
-}
-
-function updateProgress(loaded, total, bar, pct, label, container) {
-    const p = Math.round((loaded / total) * 100);
-    bar.style.width   = p + '%';
-    pct.textContent   = p + '%';
-    label.textContent = loaded < total ? `Memproses ${loaded}/${total} foto...` : `${total} foto siap diunggah`;
-    if (loaded >= total) {
-        setTimeout(() => container.classList.add('hidden'), 1500);
-    }
-}
-
-function renderPreview(src, name, idx) {
-    const div = document.createElement('div');
-    div.id        = 'preview_' + idx;
-    div.className = 'relative group aspect-square rounded-xl overflow-hidden border border-slate-200 bg-slate-100';
-    div.innerHTML = `
-        <img src="${src}" alt="${name}" class="w-full h-full object-cover">
-        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
-            <button type="button" onclick="removeFile(${idx})"
-                class="opacity-0 group-hover:opacity-100 transition-opacity
-                w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md">
-                <i class="bi bi-x text-lg"></i>
-            </button>
-        </div>
-        <div class="absolute bottom-1 left-1 right-1 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded truncate">
-            ${name}
-        </div>`;
-    previewGrid.appendChild(div);
-}
-
-function removeFile(idx) {
-    uploadedFiles[idx] = null;
-    document.getElementById('preview_' + idx)?.remove();
-    syncFilesInput();
-    if (uploadedFiles.filter(Boolean).length === 0) {
-        previewGrid.classList.add('hidden');
-    }
-}
-
-function syncFilesInput() {
-    // Buat DataTransfer baru dengan file yang tersisa
-    const dt    = new DataTransfer();
-    const valid = uploadedFiles.filter(Boolean);
-    valid.forEach(f => dt.items.add(f));
-    fotoInput.files = dt.files;
-}
-
-// ============================================================
-// FORM VALIDATION & SUBMIT
-// ============================================================
-document.getElementById('formLaporan').addEventListener('submit', function(e) {
-    const proyek = document.getElementById('proyekSelect').value;
-    const judul  = document.getElementById('judulInput').value.trim();
-    const desk   = deskripsi.value.trim();
-
-    if (!proyek) { e.preventDefault(); Toast?.show('Pilih proyek terlebih dahulu', 'error'); return; }
-    if (!judul)  { e.preventDefault(); Toast?.show('Judul laporan wajib diisi', 'error'); return; }
-    if (desk.length < 20) { e.preventDefault(); Toast?.show('Catatan lapangan minimal 20 karakter', 'error'); return; }
-
-    const btn = document.getElementById('submitBtn');
-    btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Mengunggah...';
-    btn.disabled  = true;
-});
-
-// Status radio styling
-document.querySelectorAll('.status-option').forEach(label => {
-    label.addEventListener('click', function() {
-        document.querySelectorAll('.status-option').forEach(l => {
-            l.style.borderColor = '';
-            l.style.background  = '';
-        });
-    });
-});
+    window.semuaJadwalProyek = <?= json_encode($jadwal_list) ?>;
 </script>
+<script src="<?= BASE_URL ?>/assets/js/daily-report.js"></script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

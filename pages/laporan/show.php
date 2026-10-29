@@ -1,429 +1,354 @@
 <?php
-$pageTitle   = 'Detail Laporan';
+// File: pages/laporan/show.php
+$pageTitle   = 'Detail Laporan Lapangan';
 $currentPage = 'laporan';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/auth.php';
 requireRole(['admin','manajer_proyek','teknisi_lapangan']);
 
-$id   = (int)($_GET['id'] ?? 0);
-$db   = db();
-$user = currentUser();
+$db     = db();
+$dbConn = $db;
+$laporan_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+$user_id_login = $_SESSION['user']['id'] ?? 1;
 
-$stmt = $db->prepare("
-    SELECT l.*, p.nama_proyek, p.id as proyek_id,
-           p.status as status_proyek, p.progres,
-           u.nama as nama_teknisi, u.role as role_teknisi
-    FROM laporan_lapangan l
-    JOIN proyek p ON l.proyek_id = p.id
-    JOIN users u ON l.user_id = u.id
-    WHERE l.id = ?
-");
-$stmt->execute([$id]);
-$laporan = $stmt->fetch();
-if (!$laporan) { setFlash('error','Laporan tidak ditemukan.'); redirect(BASE_URL.'/pages/laporan/index.php'); }
-
-if (isTeknisi() && $laporan['user_id'] !== (int)$user['id']) {
-    setFlash('error','Anda tidak memiliki akses ke laporan ini.');
-    redirect(BASE_URL.'/pages/laporan/index.php');
-}
-
-$fotos = $db->prepare("SELECT * FROM foto_lapangan WHERE laporan_id = ? ORDER BY id ASC");
-$fotos->execute([$id]);
-$fotos = $fotos->fetchAll();
-
-// Laporan lain di proyek yang sama untuk navigasi
-$laporanProyek = $db->prepare("
-    SELECT l.id, l.judul_laporan, l.status_pengerjaan, l.tanggal_laporan
-    FROM laporan_lapangan l
-    WHERE l.proyek_id = ? ORDER BY l.created_at DESC LIMIT 5
-");
-$laporanProyek->execute([$laporan['proyek_id']]);
-$laporanProyek = $laporanProyek->fetchAll();
-
-// Komentar/catatan (gunakan tabel activity_log sebagai komentar)
-// Buat tabel komentar_laporan jika belum ada
-try {
-    $db->exec("CREATE TABLE IF NOT EXISTS komentar_laporan (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        laporan_id INT NOT NULL,
-        user_id INT NOT NULL,
-        komentar TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (laporan_id) REFERENCES laporan_lapangan(id) ON DELETE CASCADE,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )");
-} catch(\Exception $e) {}
-
-$komentars = $db->prepare("
-    SELECT k.*, u.nama as nama_user, u.role as role_user
-    FROM komentar_laporan k
-    JOIN users u ON k.user_id = u.id
-    WHERE k.laporan_id = ?
-    ORDER BY k.created_at ASC
-");
-$komentars->execute([$id]);
-$komentars = $komentars->fetchAll();
-
-// Proses tambah komentar
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['komentar'])) {
-    $komentar = trim($_POST['komentar'] ?? '');
-    if ($komentar) {
-        $stmt = $db->prepare("INSERT INTO komentar_laporan (laporan_id, user_id, komentar) VALUES (?,?,?)");
-        $stmt->execute([$id, $user['id'], $komentar]);
-
-        // Notif ke teknisi jika yang komentar bukan teknisi
-        if (!isTeknisi() && $laporan['user_id'] !== (int)$user['id']) {
-            kirimNotifikasi($laporan['user_id'], 'Komentar Baru', $user['nama'].' menambahkan catatan di laporan "'.$laporan['judul_laporan'].'".');
-        }
-        setFlash('success','Komentar berhasil ditambahkan.');
-        redirect(BASE_URL.'/pages/laporan/show.php?id='.$id.'#komentar');
+// Proses tambah komentar jika ada submit form komentar
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['kirim_komentar']) && $laporan_id > 0) {
+    $isi_komentar = trim($_POST['komentar'] ?? '');
+    if ($isi_komentar !== '' && $dbConn instanceof PDO) {
+        $stmtKom = $dbConn->prepare("INSERT INTO komentar_laporan (laporan_id, user_id, komentar) VALUES (?, ?, ?)");
+        $stmtKom->execute([$laporan_id, $user_id_login, $isi_komentar]);
+        header("Location: index.php?page=laporan&action=show&id=" . $laporan_id);
+        exit;
     }
 }
 
+// Ambil detail laporan_lapangan beserta proyek, pelanggan, dan teknisi pembuat
+$stmt = $dbConn->prepare("
+    SELECT l.*, 
+           p.nama_proyek, p.lokasi AS lokasi_proyek, p.progres AS progres_proyek,
+           pel.nama_pelanggan,
+           u.nama AS nama_teknisi, u.role AS role_pembuat
+    FROM laporan_lapangan l
+    JOIN proyek p ON l.proyek_id = p.id
+    JOIN pelanggan pel ON p.pelanggan_id = pel.id
+    JOIN users u ON l.user_id = u.id
+    WHERE l.id = ?
+");
+$stmt->execute([$laporan_id]);
+$laporan = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$laporan) {
+    echo '<div class="alert alert-warning m-4">Data laporan lapangan tidak ditemukan. <a href="index.php?page=laporan">Kembali</a></div>';
+    return;
+}
+
+// Ambil foto_lapangan
+$stmtFoto = $dbConn->prepare("SELECT * FROM foto_lapangan WHERE laporan_id = ? ORDER BY id ASC");
+$stmtFoto->execute([$laporan_id]);
+$foto_list = $stmtFoto->fetchAll(PDO::FETCH_ASSOC);
+
+// Ambil komentar_laporan
+$stmtKomen = $dbConn->prepare("
+    SELECT k.*, u.nama, u.role 
+    FROM komentar_laporan k 
+    JOIN users u ON k.user_id = u.id 
+    WHERE k.laporan_id = ? 
+    ORDER BY k.created_at ASC
+");
+$stmtKomen->execute([$laporan_id]);
+$komentar_list = $stmtKomen->fetchAll(PDO::FETCH_ASSOC);
+
+// Decode JSON Manpower, Activity Progress, dan Next Plan
+$mp = !empty($laporan['manpower']) ? json_decode($laporan['manpower'], true) : [];
+$activities = !empty($laporan['activity_progress']) ? json_decode($laporan['activity_progress'], true) : [];
+$next_plans = !empty($laporan['next_plan']) ? json_decode($laporan['next_plan'], true) : [];
+
+// Helper Tanggal Indonesia untuk Teks WhatsApp
+$hari_indo = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', "Jum'at", 'Sabtu'];
+$bulan_indo = [1=>'Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+$ts = strtotime($laporan['tanggal_laporan']);
+$tgl_wa = $hari_indo[date('w', $ts)] . ', ' . date('j', $ts) . ' ' . $bulan_indo[(int)date('n', $ts)] . ' ' . date('Y', $ts);
+
+// Susun Format Teks WhatsApp
+$fmtMp = function($val) {
+    $n = (int)($val ?? 0);
+    return $n === 0 ? '-' : $n . ' orang';
+};
+
+$wa_activity_lines = [];
+$done_count = 0;
+if (!empty($activities)) {
+    foreach ($activities as $idx => $act) {
+        $is_done = !empty($act['done']);
+        if ($is_done) $done_count++;
+        $wa_activity_lines[] = ($idx + 1) . '. ' . $act['item'] . ($is_done ? ' ✓' : '');
+    }
+} else {
+    $wa_activity_lines[] = $laporan['deskripsi'];
+}
+
+$wa_next_lines = [];
+if (!empty($next_plans)) {
+    foreach ($next_plans as $idx => $np) {
+        $wa_next_lines[] = ($idx + 1) . '. ' . $np;
+    }
+} else {
+    $wa_next_lines[] = '-';
+}
+
+$teks_wa_lengkap = "_Selamat malam_\n\n"
+    . "*Daily Report Project*\n"
+    . "_" . ($laporan['judul_laporan'] ?: 'Maintenance Solar PV Rooftop') . "_\n"
+    . "*" . $laporan['nama_pelanggan'] . " (" . $laporan['nama_proyek'] . ")*\n\n\n"
+    . "Date :\n" . $tgl_wa . "\n\n\n"
+    . "1. Project Manager : " . $fmtMp($mp['pm'] ?? 0) . "\n"
+    . "2. Site Manager : " . $fmtMp($mp['sm'] ?? 0) . "\n"
+    . "3. Pengawas Teknik : " . $fmtMp($mp['pengawas'] ?? 0) . "\n"
+    . "4. Admin : " . $fmtMp($mp['admin'] ?? 0) . "\n"
+    . "5. Hse / Safetyman : " . $fmtMp($mp['hse'] ?? 0) . "\n"
+    . "6. Scaffolder : " . $fmtMp($mp['scaffolder'] ?? 0) . "\n"
+    . "7. Teknisi : " . $fmtMp($mp['teknisi'] ?? 0) . "\n"
+    . "8. Helper : " . $fmtMp($mp['helper'] ?? 0) . "\n"
+    . "   Total =  " . (int)($mp['total'] ?? 0) . " orang\n\n"
+    . "*Weather Report*\n"
+    . ($laporan['cuaca'] ?? '08.00 - 17.00 Cerah') . "\n\n"
+    . "*Activity Progress :*\n"
+    . " " . ($laporan['area_kerja'] ?? '-') . "\n\n\n"
+    . implode("\n", $wa_activity_lines) . "\n\n"
+    . "*Next Plan* :\n\n\n"
+    . implode("\n", $wa_next_lines) . "\n\n"
+    . "_terima kasih_";
+?>
+
+<?php
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
 ?>
+<main class="flex-1 overflow-y-auto p-6">
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-    <!-- ===== KOLOM KIRI — DETAIL ===== -->
-    <div class="lg:col-span-2 space-y-4">
-
-        <!-- Header Laporan -->
-        <div class="card p-6">
-            <div class="flex items-start gap-4">
-                <div class="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-                    <i class="bi bi-file-earmark-text text-green-600 text-xl"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <h2 class="text-lg font-bold text-slate-800"><?= sanitize($laporan['judul_laporan']) ?></h2>
-                            <div class="flex flex-wrap items-center gap-3 mt-1.5">
-                                <span class="flex items-center gap-1.5 text-xs text-slate-400">
-                                    <i class="bi bi-diagram-3"></i>
-                                    <a href="<?= BASE_URL ?>/pages/proyek/show.php?id=<?= $laporan['proyek_id'] ?>"
-                                        class="hover:text-primary-700 font-medium">
-                                        <?= sanitize($laporan['nama_proyek']) ?>
-                                    </a>
-                                </span>
-                                <span class="flex items-center gap-1.5 text-xs text-slate-400">
-                                    <i class="bi bi-person"></i><?= sanitize($laporan['nama_teknisi']) ?>
-                                </span>
-                                <span class="flex items-center gap-1.5 text-xs text-slate-400">
-                                    <i class="bi bi-calendar"></i><?= formatTanggal($laporan['tanggal_laporan']) ?>
-                                </span>
-                            </div>
-                        </div>
-                        <?= statusBadge($laporan['status_pengerjaan']) ?>
-                    </div>
-
-                    <!-- Stat mini -->
-                    <div class="flex items-center gap-4 mt-4 pt-4 border-t border-slate-50">
-                        <div class="text-center">
-                            <div class="text-xl font-bold text-slate-800"><?= count($fotos) ?></div>
-                            <div class="text-xs text-slate-400">Foto</div>
-                        </div>
-                        <div class="w-px h-8 bg-slate-100"></div>
-                        <div class="text-center">
-                            <div class="text-xl font-bold text-slate-800"><?= count($komentars) ?></div>
-                            <div class="text-xs text-slate-400">Komentar</div>
-                        </div>
-                        <div class="w-px h-8 bg-slate-100"></div>
-                        <div class="text-center">
-                            <div class="text-sm font-bold text-slate-800"><?= timeAgo($laporan['created_at']) ?></div>
-                            <div class="text-xs text-slate-400">Diunggah</div>
-                        </div>
-                    </div>
-                </div>
+<div class="container-fluid py-3">
+    <!-- Header Navigasi -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h4 class="fw-bold mb-1">
+                <i class="bi bi-file-earmark-text text-primary me-2"></i><?= htmlspecialchars($laporan['judul_laporan']) ?>
+            </h4>
+            <div class="text-muted small">
+                Proyek: <strong><?= htmlspecialchars($laporan['nama_proyek']) ?></strong> — Klien: <strong><?= htmlspecialchars($laporan['nama_pelanggan']) ?></strong>
             </div>
         </div>
-
-        <!-- Catatan Lapangan -->
-        <div class="card p-6">
-            <h3 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                <i class="bi bi-journal-text text-primary-600"></i>
-                Catatan Lapangan
-            </h3>
-            <div class="bg-slate-50 rounded-xl p-4 text-sm text-slate-700 leading-relaxed whitespace-pre-line">
-                <?= sanitize($laporan['deskripsi']) ?>
-            </div>
+        <div class="d-flex gap-2">
+            <a href="index.php?page=laporan" class="btn btn-outline-secondary btn-sm px-3">
+                <i class="bi bi-arrow-left me-1"></i>Kembali
+            </a>
         </div>
+    </div>
 
-        <!-- Gallery Foto -->
-        <?php if (!empty($fotos)): ?>
-        <div class="card p-6">
-            <h3 class="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-                <i class="bi bi-images text-blue-500"></i>
-                Dokumentasi Foto
-                <span class="ml-auto text-xs font-normal text-slate-400"><?= count($fotos) ?> foto</span>
-            </h3>
-
-            <!-- Grid Gallery -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                <?php foreach ($fotos as $i => $f): ?>
-                <div class="relative aspect-square rounded-xl overflow-hidden group cursor-pointer bg-slate-100"
-                    onclick="openLightbox(<?= $i ?>)">
-                    <img src="<?= BASE_URL ?>/uploads/<?= sanitize($f['path_file']) ?>"
-                        alt="Foto <?= $i+1 ?>"
-                        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy">
-                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                        <div class="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-800">
-                            <i class="bi bi-arrows-fullscreen me-1"></i>Perbesar
-                        </div>
-                    </div>
-                    <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
-                        <?= $i+1 ?>/<?= count($fotos) ?>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <!-- Komentar / Feedback -->
-        <div class="card p-6" id="komentar">
-            <h3 class="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-                <i class="bi bi-chat-dots text-purple-500"></i>
-                Catatan & Feedback
-                <span class="ml-auto text-xs font-normal text-slate-400"><?= count($komentars) ?> catatan</span>
-            </h3>
-
-            <!-- List Komentar -->
-            <?php if (empty($komentars)): ?>
-            <div class="text-center py-6">
-                <i class="bi bi-chat text-3xl text-slate-200 block mb-2"></i>
-                <p class="text-sm text-slate-400">Belum ada catatan atau feedback</p>
-            </div>
-            <?php else: ?>
-            <div class="space-y-3 mb-5">
-                <?php foreach ($komentars as $k):
-                    $roleColors2 = ['admin'=>'bg-red-500','manajer_proyek'=>'bg-blue-500','teknisi_lapangan'=>'bg-green-500','gudang'=>'bg-purple-500'];
-                    $kc = $roleColors2[$k['role_user']] ?? 'bg-slate-400';
-                ?>
-                <div class="flex gap-3">
-                    <div class="w-8 h-8 rounded-full <?= $kc ?> flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                        <?= strtoupper(substr($k['nama_user'],0,1)) ?>
-                    </div>
-                    <div class="flex-1">
-                        <div class="bg-slate-50 rounded-xl rounded-tl-none px-4 py-3">
-                            <div class="flex items-center gap-2 mb-1.5">
-                                <span class="text-xs font-semibold text-slate-700"><?= sanitize($k['nama_user']) ?></span>
-                                <?php
-                                $rlabel = ['admin'=>'Admin','manajer_proyek'=>'Manajer','teknisi_lapangan'=>'Teknisi','gudang'=>'Gudang'];
-                                $rl     = $rlabel[$k['role_user']] ?? $k['role_user'];
-                                ?>
-                                <span class="text-xs px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-500"><?= $rl ?></span>
-                            </div>
-                            <p class="text-sm text-slate-700 leading-relaxed whitespace-pre-line"><?= sanitize($k['komentar']) ?></p>
-                        </div>
-                        <p class="text-xs text-slate-400 mt-1 ml-2"><?= timeAgo($k['created_at']) ?></p>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-            <?php endif; ?>
-
-            <!-- Form Tambah Komentar -->
-            <form method="POST" action="?id=<?= $id ?>#komentar" class="flex gap-3">
-                <?= csrfField() ?>
-                <div class="w-8 h-8 rounded-full <?= $roleColors[$user['role']] ?? 'bg-slate-400' ?> flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-1">
+    <div class="row g-4">
+        <!-- KOLOM KIRI: RINCIAN LAPORAN LAPANGAN -->
+        <div class="col-lg-7">
+            
+            <!-- Ringkasan Info Laporan -->
+            <div class="report-card">
+                <div class="report-card-header">
+                    <span><i class="bi bi-info-circle text-primary me-2"></i>Informasi Umum Laporan</span>
                     <?php
-                    $roleColors = ['admin'=>'bg-red-500','manajer_proyek'=>'bg-blue-500','teknisi_lapangan'=>'bg-green-500','gudang'=>'bg-purple-500'];
-                    echo strtoupper(substr($user['nama'],0,1));
+                    $badge_status = [
+                        'belum_mulai'  => 'bg-secondary',
+                        'dalam_proses' => 'bg-primary',
+                        'selesai'      => 'bg-success',
+                        'terkendala'   => 'bg-danger'
+                    ][$laporan['status_pengerjaan']] ?? 'bg-secondary';
                     ?>
+                    <span class="badge <?= $badge_status ?> text-uppercase"><?= str_replace('_', ' ', $laporan['status_pengerjaan']) ?></span>
                 </div>
-                <div class="flex-1">
-                    <textarea name="komentar" rows="2"
-                        class="form-input resize-none text-sm"
-                        placeholder="<?= isTeknisi() ? 'Tambahkan catatan atau update...' : 'Berikan feedback atau catatan untuk teknisi...' ?>"
-                        required></textarea>
-                    <div class="flex justify-end mt-2">
-                        <button type="submit" class="btn-primary btn-sm">
-                            <i class="bi bi-send"></i> Kirim
-                        </button>
+                <div class="card-body p-4">
+                    <div class="row g-3 small">
+                        <div class="col-sm-6">
+                            <div class="text-muted">Tanggal Laporan</div>
+                            <div class="fw-bold fs-6"><?= htmlspecialchars($tgl_wa) ?></div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="text-muted">Area / Gedung Spesifik</div>
+                            <div class="fw-bold fs-6"><i class="bi bi-building me-1 text-warning"></i><?= htmlspecialchars($laporan['area_kerja'] ?? '-') ?></div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="text-muted">Weather Report (Cuaca)</div>
+                            <div class="fw-semibold"><i class="bi bi-cloud-sun me-1 text-info"></i><?= htmlspecialchars($laporan['cuaca'] ?? '08.00 - 17.00 Cerah') ?></div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="text-muted">Dilaporkan Oleh</div>
+                            <div class="fw-semibold"><i class="bi bi-person-badge me-1"></i><?= htmlspecialchars($laporan['nama_teknisi']) ?></div>
+                        </div>
                     </div>
                 </div>
-            </form>
-        </div>
+            </div>
 
-        <!-- Aksi -->
-        <div class="flex gap-3">
-            <a href="<?= BASE_URL ?>/pages/proyek/show.php?id=<?= $laporan['proyek_id'] ?>" class="btn-secondary flex-1 justify-center">
-                <i class="bi bi-diagram-3"></i> Lihat Proyek
-            </a>
-            <?php if (isAdmin() || $laporan['user_id'] === (int)$user['id']): ?>
-            <form method="POST" action="<?= BASE_URL ?>/api/laporan/delete.php" class="flex-1"
-                onsubmit="event.preventDefault(); confirmDelete(this, 'Hapus laporan ini beserta <?= count($fotos) ?> foto?')">
-                <?= csrfField() ?>
-                <input type="hidden" name="id" value="<?= $id ?>">
-                <button type="submit" class="btn-danger w-full justify-center">
-                    <i class="bi bi-trash"></i> Hapus Laporan
-                </button>
-            </form>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <!-- ===== KOLOM KANAN — SIDEBAR INFO ===== -->
-    <div class="space-y-4">
-        <!-- Status Proyek -->
-        <div class="card p-5">
-            <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Status Proyek</h3>
-            <div class="mb-2"><?= statusBadge($laporan['status_proyek']) ?></div>
-            <div class="flex items-center gap-2 mt-3">
-                <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-primary-600 rounded-full" style="width:<?= $laporan['progres'] ?>%"></div>
+            <!-- Rincian Manpower -->
+            <div class="report-card">
+                <div class="report-card-header">
+                    <span><i class="bi bi-people-fill text-warning me-2"></i>Manpower (Personel di Lapangan)</span>
+                    <span class="badge bg-primary">Total: <?= (int)($mp['total'] ?? 0) ?> Orang</span>
                 </div>
-                <span class="text-xs font-semibold text-slate-700"><?= $laporan['progres'] ?>%</span>
-            </div>
-        </div>
-
-        <!-- Laporan Lain di Proyek Ini -->
-        <?php if (count($laporanProyek) > 1): ?>
-        <div class="card p-5">
-            <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
-                Laporan Lain di Proyek Ini
-            </h3>
-            <div class="space-y-2">
-                <?php foreach ($laporanProyek as $lp): ?>
-                <a href="<?= BASE_URL ?>/pages/laporan/show.php?id=<?= $lp['id'] ?>"
-                    class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 transition-colors
-                    <?= $lp['id']==$id ? 'bg-primary-50 border border-primary-200' : '' ?>">
-                    <div class="w-2 h-2 rounded-full flex-shrink-0
-                        <?= $lp['id']==$id ? 'bg-primary-600' : 'bg-slate-300' ?>"></div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-xs font-medium text-slate-700 truncate"><?= sanitize($lp['judul_laporan']) ?></p>
-                        <p class="text-xs text-slate-400"><?= formatTanggalShort($lp['tanggal_laporan']) ?></p>
+                <div class="card-body p-4">
+                    <div class="row g-2 small">
+                        <?php
+                        $daftar_posisi = [
+                            'pm'         => '1. Project Manager',
+                            'sm'         => '2. Site Manager',
+                            'pengawas'   => '3. Pengawas Teknik',
+                            'admin'      => '4. Admin',
+                            'hse'        => '5. HSE / Safetyman',
+                            'scaffolder' => '6. Scaffolder',
+                            'teknisi'    => '7. Teknisi',
+                            'helper'     => '8. Helper',
+                        ];
+                        foreach ($daftar_posisi as $k => $label):
+                            $jml = (int)($mp[$k] ?? 0);
+                        ?>
+                        <div class="col-6 col-md-3">
+                            <div class="p-2 border rounded bg-light d-flex justify-content-between align-items-center">
+                                <span class="text-muted"><?= $label ?></span>
+                                <span class="fw-bold <?= $jml > 0 ? 'text-dark' : 'text-secondary' ?>"><?= $jml > 0 ? $jml . ' Org' : '-' ?></span>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
                     </div>
-                    <?= statusBadge($lp['status_pengerjaan']) ?>
-                </a>
-                <?php endforeach; ?>
+                </div>
+            </div>
+
+            <!-- Rincian Activity Progress & Next Plan -->
+            <div class="report-card">
+                <div class="report-card-header">
+                    <span><i class="bi bi-list-check text-success me-2"></i>Activity Progress — <?= htmlspecialchars($laporan['area_kerja'] ?? '') ?></span>
+                    <?php if (!empty($activities)): ?>
+                        <span class="badge bg-success"><?= $done_count ?>/<?= count($activities) ?> Selesai</span>
+                    <?php endif; ?>
+                </div>
+                <div class="card-body p-4">
+                    <?php if (!empty($activities)): ?>
+                        <ul class="list-group list-group-flush mb-3">
+                            <?php foreach ($activities as $idx => $act): ?>
+                                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                    <span><strong><?= $idx + 1 ?>.</strong> <?= htmlspecialchars($act['item']) ?></span>
+                                    <?php if (!empty($act['done'])): ?>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">✓ Selesai</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-warning-subtle text-dark border border-warning-subtle px-2 py-1">Belum Selesai</span>
+                                    <?php endif; ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php else: ?>
+                        <p class="mb-3" style="white-space: pre-line;"><?= htmlspecialchars($laporan['deskripsi']) ?></p>
+                    <?php endif; ?>
+
+                    <h6 class="fw-bold border-top pt-3 mt-3"><i class="bi bi-calendar2-plus text-primary me-2"></i>Next Plan (Rencana Selanjutnya)</h6>
+                    <?php if (!empty($next_plans)): ?>
+                        <ol class="mb-0 ps-3">
+                            <?php foreach ($next_plans as $np): ?>
+                                <li class="mb-1"><?= htmlspecialchars($np) ?></li>
+                            <?php endforeach; ?>
+                        </ol>
+                    <?php else: ?>
+                        <p class="text-muted small mb-0">Tidak ada catatan next plan.</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Galeri Foto Dokumentasi Lapangan -->
+            <div class="report-card">
+                <div class="report-card-header">
+                    <span><i class="bi bi-images text-info me-2"></i>Foto Dokumentasi Lapangan (<?= count($foto_list) ?>)</span>
+                </div>
+                <div class="card-body p-4">
+                    <?php if (!empty($foto_list)): ?>
+                        <div class="row g-3">
+                            <?php foreach ($foto_list as $foto): ?>
+                                <div class="col-6 col-md-4">
+                                    <a href="<?= htmlspecialchars($foto['path_file']) ?>" target="_blank">
+                                        <img src="<?= htmlspecialchars($foto['path_file']) ?>" alt="<?= htmlspecialchars($foto['nama_file']) ?>" class="foto-lapangan-thumb">
+                                    </a>
+                                    <?php if (!empty($foto['keterangan'])): ?>
+                                        <div class="small text-muted mt-1 text-truncate"><?= htmlspecialchars($foto['keterangan']) ?></div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="text-muted small">Belum ada foto dokumentasi yang diunggah pada laporan ini.</div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Diskusi / Komentar Laporan (komentar_laporan) -->
+            <div class="report-card">
+                <div class="report-card-header">
+                    <span><i class="bi bi-chat-dots text-secondary me-2"></i>Komentar & Evaluasi Manajer Proyek (<?= count($komentar_list) ?>)</span>
+                </div>
+                <div class="card-body p-4">
+                    <?php if (!empty($komentar_list)): ?>
+                        <div class="mb-3">
+                            <?php foreach ($komentar_list as $kom): ?>
+                                <div class="p-3 rounded bg-light border mb-2">
+                                    <div class="d-flex justify-content-between small mb-1">
+                                        <strong><?= htmlspecialchars($kom['nama']) ?> <span class="badge bg-secondary ms-1"><?= htmlspecialchars($kom['role']) ?></span></strong>
+                                        <span class="text-muted"><?= htmlspecialchars($kom['created_at']) ?></span>
+                                    </div>
+                                    <div class="small"><?= nl2br(htmlspecialchars($kom['komentar'])) ?></div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <form method="POST">
+                        <div class="input-group">
+                            <input type="text" name="komentar" class="form-control" placeholder="Tulis catatan atau tanggapan untuk laporan ini..." required>
+                            <button type="submit" name="kirim_komentar" class="btn btn-primary">
+                                <i class="bi bi-send me-1"></i>Kirim
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- KOLOM KANAN: FORMAT WHATSAPP SIAP SALIN -->
+        <div class="col-lg-5">
+            <div class="card wa-preview-card sticky-top" style="top: 20px;">
+                <div class="wa-preview-header">
+                    <span class="fw-bold"><i class="bi bi-whatsapp me-2"></i>Format Teks WhatsApp</span>
+                    <button type="button" class="btn btn-sm btn-light fw-semibold" onclick="salinTeksDetailWA()">
+                        <i class="bi bi-clipboard-check me-1"></i>Copy Teks WA
+                    </button>
+                </div>
+                <div class="card-body p-3 bg-white">
+                    <div class="wa-chat-wallpaper">
+                        <div class="wa-chat-bubble">
+                            <div id="waDetailText"><?= htmlspecialchars($teks_wa_lengkap) ?></div>
+                            <span class="wa-bubble-time"><?= date('H:i', strtotime($laporan['created_at'])) ?> ✓✓</span>
+                        </div>
+                    </div>
+                    <div id="alertCopyShow" class="alert alert-success py-2 px-3 mt-2 mb-0 small d-none">
+                        <i class="bi bi-check2-all me-1"></i>Teks laporan berhasil disalin ke clipboard!
+                    </div>
+                </div>
             </div>
         </div>
-        <?php endif; ?>
-
-        <!-- Quick Actions -->
-        <div class="card p-5">
-            <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Aksi Cepat</h3>
-            <div class="space-y-2">
-                <a href="<?= BASE_URL ?>/pages/laporan/create.php?proyek_id=<?= $laporan['proyek_id'] ?>"
-                    class="flex items-center gap-2 w-full px-3 py-2.5 bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 transition-colors text-sm font-medium">
-                    <i class="bi bi-plus-circle"></i> Laporan Baru di Proyek Ini
-                </a>
-                <a href="<?= BASE_URL ?>/pages/laporan/index.php"
-                    class="flex items-center gap-2 w-full px-3 py-2.5 bg-slate-50 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors text-sm">
-                    <i class="bi bi-list-ul"></i> Semua Laporan Saya
-                </a>
-                <a href="<?= BASE_URL ?>/pages/proyek/show.php?id=<?= $laporan['proyek_id'] ?>"
-                    class="flex items-center gap-2 w-full px-3 py-2.5 bg-slate-50 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors text-sm">
-                    <i class="bi bi-diagram-3"></i> Detail Proyek
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ===== LIGHTBOX ===== -->
-<div id="lightbox" class="fixed inset-0 bg-black/95 z-[999] hidden flex-col" onclick="closeLightbox()">
-    <!-- Toolbar -->
-    <div class="flex items-center justify-between px-6 py-4 flex-shrink-0" onclick="event.stopPropagation()">
-        <span class="text-white/70 text-sm" id="lightboxLabel">Foto 1 dari <?= count($fotos) ?></span>
-        <div class="flex items-center gap-3">
-            <a id="lightboxDownload" href="#" download class="text-white/60 hover:text-white transition-colors">
-                <i class="bi bi-download"></i>
-            </a>
-            <button onclick="closeLightbox()" class="text-white/60 hover:text-white transition-colors">
-                <i class="bi bi-x-lg text-xl"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- Gambar -->
-    <div class="flex-1 flex items-center justify-center px-4 pb-4 relative" onclick="event.stopPropagation()">
-        <!-- Prev -->
-        <button id="prevBtn" onclick="lightboxPrev()"
-            class="absolute left-4 z-10 w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-colors">
-            <i class="bi bi-chevron-left"></i>
-        </button>
-
-        <img id="lightboxImg" src="" alt=""
-            class="max-h-full max-w-full object-contain rounded-xl shadow-2xl transition-opacity duration-300">
-
-        <!-- Next -->
-        <button id="nextBtn" onclick="lightboxNext()"
-            class="absolute right-4 z-10 w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-colors">
-            <i class="bi bi-chevron-right"></i>
-        </button>
-    </div>
-
-    <!-- Thumbnail Strip -->
-    <div class="flex gap-2 px-6 pb-5 overflow-x-auto flex-shrink-0 justify-center" onclick="event.stopPropagation()">
-        <?php foreach ($fotos as $i => $f): ?>
-        <div class="flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden cursor-pointer border-2 transition-all
-            thumb-item" id="thumb_<?= $i ?>" onclick="openLightbox(<?= $i ?>)">
-            <img src="<?= BASE_URL ?>/uploads/<?= sanitize($f['path_file']) ?>"
-                class="w-full h-full object-cover" loading="lazy">
-        </div>
-        <?php endforeach; ?>
     </div>
 </div>
 
 <script>
-const fotos = <?= json_encode(array_map(fn($f) => [
-    'src'  => BASE_URL . '/uploads/' . $f['path_file'],
-    'name' => $f['nama_file'],
-], $fotos)) ?>;
-
-let currentFoto = 0;
-
-function openLightbox(idx) {
-    currentFoto = idx;
-    updateLightbox();
-    document.getElementById('lightbox').classList.remove('hidden');
-    document.getElementById('lightbox').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-}
-function closeLightbox() {
-    document.getElementById('lightbox').style.display = 'none';
-    document.getElementById('lightbox').classList.add('hidden');
-    document.body.style.overflow = '';
-}
-function updateLightbox() {
-    const img  = document.getElementById('lightboxImg');
-    const lbl  = document.getElementById('lightboxLabel');
-    const dl   = document.getElementById('lightboxDownload');
-    const foto = fotos[currentFoto];
-
-    img.style.opacity = '0';
-    img.src           = foto.src;
-    img.onload        = () => img.style.opacity = '1';
-    lbl.textContent   = `Foto ${currentFoto+1} dari ${fotos.length}`;
-    dl.href           = foto.src;
-    dl.download       = foto.name;
-
-    // Update thumbnail strip
-    document.querySelectorAll('.thumb-item').forEach((t,i) => {
-        t.style.borderColor = i === currentFoto ? '#fff' : 'transparent';
-        t.style.opacity     = i === currentFoto ? '1' : '0.5';
+function salinTeksDetailWA() {
+    const teks = document.getElementById('waDetailText').innerText;
+    navigator.clipboard.writeText(teks).then(() => {
+        const el = document.getElementById('alertCopyShow');
+        el.classList.remove('d-none');
+        setTimeout(() => el.classList.add('d-none'), 3000);
     });
-
-    // Prev/next visibility
-    document.getElementById('prevBtn').style.opacity = currentFoto > 0 ? '1' : '0.2';
-    document.getElementById('nextBtn').style.opacity = currentFoto < fotos.length-1 ? '1' : '0.2';
 }
-function lightboxPrev() { if (currentFoto > 0) { currentFoto--; updateLightbox(); } }
-function lightboxNext() { if (currentFoto < fotos.length-1) { currentFoto++; updateLightbox(); } }
-
-// Keyboard navigation
-document.addEventListener('keydown', e => {
-    const lb = document.getElementById('lightbox');
-    if (lb.style.display === 'none' || lb.classList.contains('hidden')) return;
-    if (e.key === 'ArrowLeft')  lightboxPrev();
-    if (e.key === 'ArrowRight') lightboxNext();
-    if (e.key === 'Escape')     closeLightbox();
-});
 </script>
-
+</main>
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

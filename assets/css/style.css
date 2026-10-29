@@ -6,7 +6,7 @@
 /* ============ CSS VARIABLES ============ */
 :root {
     /* Brand Colors — Indigo Family */
-    --brand-50:  #eef2ff;
+    --brand-50: #eef2ff;
     --brand-100: #e0e7ff;
     --brand-200: #c7d2fe;
     --brand-300: #a5b4fc;
@@ -18,7 +18,7 @@
     --brand-900: #1e1b4b;
 
     /* Neutral — Slate */
-    --slate-50:  #f8fafc;
+    --slate-50: #f8fafc;
     --slate-100: #f1f5f9;
     --slate-200: #e2e8f0;
     --slate-300: #cbd5e1;
@@ -32,9 +32,9 @@
     /* Semantic */
     --success: #10b981;
     --warning: #f59e0b;
-    --danger:  #ef4444;
-    --info:    #3b82f6;
-    --accent:  #fbbf24;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --accent: #fbbf24;
 
     /* Spacing Scale (4px base) */
     --space-1: 4px;
@@ -71,7 +71,9 @@
 }
 
 /* ============ BASE ============ */
-* { box-sizing: border-box; }
+* {
+    box-sizing: border-box;
+}
 
 html {
     scroll-behavior: smooth;
@@ -100,16 +102,32 @@ body {
 }
 
 /* ============ SCROLLBAR ============ */
-*::-webkit-scrollbar { width: 8px; height: 8px; }
-*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
 *::-webkit-scrollbar-thumb {
     background: var(--slate-300);
     border-radius: var(--radius-full);
     transition: background var(--transition-fast);
 }
-*::-webkit-scrollbar-thumb:hover { background: var(--slate-400); }
-aside::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); }
-aside::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
+
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--slate-400);
+}
+
+aside::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+aside::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
 
 /* ============ SIDEBAR ============ */
 .sidebar-link {
@@ -398,59 +416,129 @@ table thead th {
 
 /* ============ ANIMATIONS ============ */
 @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-8px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
 }
 
 @keyframes pulseKritis {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-    50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.15); }
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+
+    50% {
+        box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.15);
+    }
 }
 
 @keyframes progressShine {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
 }
 
 @keyframes pulseDot {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(1.2); }
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: scale(1.2);
+    }
 }
 
 @keyframes scaleIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 @keyframes emptyFloat {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-6px);
+    }
 }
 
 /* Page transition */
-main > * {
+main>* {
     animation: fadeUp 0.4s var(--ease-out) both;
 }
 
-main > *:nth-child(2) { animation-delay: 0.05s; }
-main > *:nth-child(3) { animation-delay: 0.1s; }
-main > *:nth-child(4) { animation-delay: 0.15s; }
-main > *:nth-child(5) { animation-delay: 0.2s; }
+main>*:nth-child(2) {
+    animation-delay: 0.05s;
+}
+
+main>*:nth-child(3) {
+    animation-delay: 0.1s;
+}
+
+main>*:nth-child(4) {
+    animation-delay: 0.15s;
+}
+
+main>*:nth-child(5) {
+    animation-delay: 0.2s;
+}
 
 /* Flash message */
 #flashMsg {
@@ -497,9 +585,9 @@ main > *:nth-child(5) { animation-delay: 0.2s; }
     position: absolute;
     inset: 0;
     background: linear-gradient(90deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.3) 50%,
-        transparent 100%);
+            transparent 0%,
+            rgba(255, 255, 255, 0.3) 50%,
+            transparent 100%);
     animation: progressShine 2.5s ease-in-out infinite;
 }
 
@@ -650,9 +738,20 @@ main > *:nth-child(5) { animation-delay: 0.2s; }
     letter-spacing: -0.01em;
 }
 
-.body-lg { font-size: 1rem; line-height: 1.6; }
-.body-md { font-size: 0.875rem; line-height: 1.6; }
-.body-sm { font-size: 0.8125rem; line-height: 1.5; }
+.body-lg {
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.body-md {
+    font-size: 0.875rem;
+    line-height: 1.6;
+}
+
+.body-sm {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+}
 
 .caption {
     font-size: 0.75rem;
@@ -741,9 +840,17 @@ html.dark header.topbar {
     border-color: var(--slate-700) !important;
 }
 
-html.dark .bg-white { background: var(--slate-800) !important; }
-html.dark .bg-slate-50 { background: var(--slate-900) !important; }
-html.dark .bg-slate-100 { background: var(--slate-800) !important; }
+html.dark .bg-white {
+    background: var(--slate-800) !important;
+}
+
+html.dark .bg-slate-50 {
+    background: var(--slate-900) !important;
+}
+
+html.dark .bg-slate-100 {
+    background: var(--slate-800) !important;
+}
 
 html.dark .border-slate-100,
 html.dark .border-slate-200 {
@@ -764,9 +871,14 @@ html.dark .text-slate-400 {
     color: var(--slate-500) !important;
 }
 
-html.dark table { color: var(--slate-100); }
+html.dark table {
+    color: var(--slate-100);
+}
+
 html.dark .table-light,
-html.dark thead { background: var(--slate-900) !important; }
+html.dark thead {
+    background: var(--slate-900) !important;
+}
 
 html.dark input,
 html.dark select,
@@ -776,14 +888,30 @@ html.dark textarea {
     color: var(--slate-100) !important;
 }
 
-html.dark input::placeholder { color: var(--slate-500) !important; }
+html.dark input::placeholder {
+    color: var(--slate-500) !important;
+}
 
-html.dark .hover\:bg-slate-50:hover { background: var(--slate-800) !important; }
-html.dark .hover\:bg-slate-100:hover { background: var(--slate-700) !important; }
-html.dark .divide-slate-50 > * { border-color: var(--slate-800) !important; }
+html.dark .hover\:bg-slate-50:hover {
+    background: var(--slate-800) !important;
+}
 
-html.dark .empty-state-title { color: var(--slate-100); }
-html.dark .empty-state-desc { color: var(--slate-400); }
+html.dark .hover\:bg-slate-100:hover {
+    background: var(--slate-700) !important;
+}
+
+html.dark .divide-slate-50>* {
+    border-color: var(--slate-800) !important;
+}
+
+html.dark .empty-state-title {
+    color: var(--slate-100);
+}
+
+html.dark .empty-state-desc {
+    color: var(--slate-400);
+}
+
 html.dark .empty-state-icon {
     background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.05));
     color: var(--brand-400);
@@ -796,6 +924,7 @@ html.dark .skeleton {
 
 /* ============ PRINT ============ */
 @media print {
+
     aside,
     header,
     #toastContainer,
@@ -822,6 +951,7 @@ html.dark .skeleton {
 
 /* ============ REDUCED MOTION ============ */
 @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
@@ -829,4 +959,170 @@ html.dark .skeleton {
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
     }
+}
+
+/* ==========================================================================
+   MODUL DAILY REPORT LAPANGAN & WHATSAPP PREVIEW (PT ENERGY LIMA PILAR)
+   ========================================================================== */
+
+/* Card & Section Styling */
+.report-card {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+}
+
+.report-card:hover {
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.07);
+}
+
+.report-card-header {
+    background: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    color: #1e293b;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.report-step-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-right: 0.6rem;
+}
+
+/* Timeline Comparison Box */
+.timeline-info-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #0284c7;
+    border-radius: 10px;
+    padding: 0.9rem 1.1rem;
+}
+
+/* Manpower Grid Cards */
+.manpower-item-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.65rem 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.manpower-item-box:focus-within {
+    background: #ffffff;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+.manpower-item-box label {
+    font-size: 0.78rem;
+    color: #475569;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.35rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Dynamic Checklist Row */
+.activity-row,
+.nextplan-row {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    border-radius: 8px;
+}
+
+.activity-row:focus-within,
+.nextplan-row:focus-within {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.activity-check-wrapper {
+    cursor: pointer;
+    user-select: none;
+    background-color: #f8fafc;
+}
+
+.activity-check-wrapper:has(.activity-check:checked) {
+    background-color: #ecfdf5 !important;
+    border-color: #10b981;
+}
+
+/* WhatsApp Live Preview Container */
+.wa-preview-card {
+    border: none;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+}
+
+.wa-preview-header {
+    background: linear-gradient(135deg, #075e54 0%, #128c7e 100%);
+    color: #ffffff;
+    padding: 0.9rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.wa-chat-wallpaper {
+    background-color: #efeae2;
+    background-image: radial-gradient(#d1cbbf 1px, transparent 1px);
+    background-size: 18px 18px;
+    padding: 1.1rem;
+    border-radius: 10px;
+    max-height: 620px;
+    overflow-y: auto;
+}
+
+.wa-chat-bubble {
+    background-color: #d9fdd3;
+    color: #111b21;
+    border-radius: 10px 0 10px 10px;
+    padding: 12px 14px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    box-shadow: 0 1px 2px rgba(17, 27, 33, 0.18);
+    position: relative;
+}
+
+.wa-bubble-time {
+    display: block;
+    text-align: right;
+    font-size: 0.72rem;
+    color: #667781;
+    margin-top: 6px;
+}
+
+/* Galeri Foto Lapangan pada Show Detail */
+.foto-lapangan-thumb {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    transition: transform 0.2s ease;
+    cursor: pointer;
+}
+
+.foto-lapangan-thumb:hover {
+    transform: scale(1.02);
 }
