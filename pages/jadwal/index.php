@@ -1,19 +1,19 @@
 <?php
-// pages/jadwal/index.php — KALENDAR INTERAKTIF PREMIUM
-$pageTitle   = 'Kalender Jadwal';
+// pages/jadwal/index.php — KALENDER & MANAJEMEN JADWAL INSTALASI V2
+$pageTitle   = 'Jadwal Instalasi';
 $currentPage = 'jadwal';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/auth.php';
-requireRole(['admin','manajer_proyek']);
+requireRole(['admin', 'manajer_proyek']);
 
 $db = db();
 
-// Ambil semua jadwal dengan data lengkap
+// Ambil semua jadwal dengan data lengkap proyek & pelanggan
 $stmt = $db->query("
     SELECT j.*, p.nama_proyek, p.id as proyek_id, p.progres, p.status as status_proyek,
            pl.nama_pelanggan,
-           DATEDIFF(j.tanggal_selesai, j.tanggal_mulai) as durasi_hari
+           DATEDIFF(j.tanggal_selesai, j.tanggal_mulai) + 1 as durasi_hari
     FROM jadwal j
     JOIN proyek p ON j.proyek_id = p.id
     JOIN pelanggan pl ON p.pelanggan_id = pl.id
@@ -21,899 +21,787 @@ $stmt = $db->query("
 ");
 $jadwals = $stmt->fetchAll();
 
-// Format untuk FullCalendar dengan custom rendering
-$events = [];
+// Daftar proyek aktif untuk modal Quick-Create Jadwal
+$proyeksAktif = $db->query("
+    SELECT p.id, p.nama_proyek, pl.nama_pelanggan 
+    FROM proyek p 
+    JOIN pelanggan pl ON p.pelanggan_id = pl.id
+    WHERE p.status IN ('survei','perencanaan','instalasi') 
+    ORDER BY p.nama_proyek ASC
+")->fetchAll();
+
 $statusMeta = [
-    'terjadwal' => ['color' => '#64748b', 'bg'    => 'bg-slate-100',    'text' => 'text-slate-700',    'label' => 'Terjadwal', 'icon' => 'bi-clock'],
-    'berjalan'  => ['color' => '#3b82f6', 'bg'    => 'bg-blue-100',     'text' => 'text-blue-700',     'label' => 'Berjalan',  'icon' => 'bi-play-circle'],
-    'selesai'   => ['color' => '#10b981', 'bg'    => 'bg-emerald-100',  'text' => 'text-emerald-700',  'label' => 'Selesai',   'icon' => 'bi-check-circle'],
-    'ditunda'   => ['color' => '#f59e0b', 'bg'    => 'bg-amber-100',    'text' => 'text-amber-700',    'label' => 'Ditunda',   'icon' => 'bi-pause-circle'],
+    'terjadwal' => [
+        'color' => '#64748b',
+        'bg'    => '#f1f5f9',
+        'border'=> '#cbd5e1',
+        'text'  => '#334155',
+        'badge' => 'bg-slate-100 text-slate-700 ring-slate-200',
+        'label' => 'Terjadwal',
+        'icon'  => 'bi-clock'
+    ],
+    'berjalan'  => [
+        'color' => '#4f46e5',
+        'bg'    => '#eef2ff',
+        'border'=> '#a5b4fc',
+        'text'  => '#3730a3',
+        'badge' => 'bg-indigo-50 text-indigo-700 ring-indigo-200',
+        'label' => 'Berjalan',
+        'icon'  => 'bi-play-circle-fill'
+    ],
+    'selesai'   => [
+        'color' => '#10b981',
+        'bg'    => '#ecfdf5',
+        'border'=> '#6ee7b7',
+        'text'  => '#065f46',
+        'badge' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+        'label' => 'Selesai',
+        'icon'  => 'bi-check-circle-fill'
+    ],
+    'ditunda'   => [
+        'color' => '#f59e0b',
+        'bg'    => '#fffbeb',
+        'border'=> '#fcd34d',
+        'text'  => '#92400e',
+        'badge' => 'bg-amber-50 text-amber-700 ring-amber-200',
+        'label' => 'Ditunda',
+        'icon'  => 'bi-pause-circle-fill'
+    ],
 ];
 
+$events = [];
 foreach ($jadwals as $j) {
     $meta = $statusMeta[$j['status']] ?? $statusMeta['terjadwal'];
     $events[] = [
-        'id'            => $j['id'],
-        'title'         => $j['nama_proyek'],
-        'start'         => $j['tanggal_mulai'],
-        'end'           => date('Y-m-d', strtotime($j['tanggal_selesai'] . ' +1 day')),
-        'color'         => $meta['color'],
-        'status'        => $j['status'],
-        'statusLabel'   => $meta['label'],
-        'statusIcon'    => $meta['icon'],
-        'keterangan'    => $j['keterangan'] ?? '-',
-        'pelanggan'     => $j['nama_pelanggan'],
-        'proyek_id'     => $j['proyek_id'],
-        'durasi_hari'   => $j['durasi_hari'],
-        'progres'       => (int)$j['progres'],
-        'extendedProps' => [
-            'status'       => $j['status'],
-            'statusLabel'  => $meta['label'],
-            'statusIcon'   => $meta['icon'],
-            'statusColor'  => $meta['color'],
-            'keterangan'   => $j['keterangan'] ?? '-',
-            'pelanggan'    => $j['nama_pelanggan'],
-            'proyek_id'    => $j['proyek_id'],
-            'durasi_hari'  => $j['durasi_hari'],
-            'progres'      => (int)$j['progres'],
+        'id'              => (int)$j['id'],
+        'title'           => $j['nama_proyek'],
+        'start'           => $j['tanggal_mulai'],
+        'end'             => date('Y-m-d', strtotime($j['tanggal_selesai'] . ' +1 day')),
+        'backgroundColor' => $meta['bg'],
+        'borderColor'     => $meta['color'],
+        'textColor'       => $meta['text'],
+        'status'          => $j['status'],
+        'extendedProps'   => [
+            'status'          => $j['status'],
+            'statusLabel'     => $meta['label'],
+            'statusIcon'      => $meta['icon'],
+            'statusColor'     => $meta['color'],
+            'keterangan'      => $j['keterangan'] ?: 'Tidak ada keterangan tambahan',
+            'keteranganRaw'   => $j['keterangan'] ?? '',
+            'pelanggan'       => $j['nama_pelanggan'],
+            'proyek_id'       => (int)$j['proyek_id'],
+            'durasi_hari'     => max(1, (int)$j['durasi_hari']),
+            'progres'         => (int)$j['progres'],
+            'tanggal_mulai'   => $j['tanggal_mulai'],
+            'tanggal_selesai' => $j['tanggal_selesai'],
         ],
     ];
 }
 
-// Statistik
+// Statistik Ringkas
 $totalJadwal = count($jadwals);
 $berjalan    = count(array_filter($jadwals, fn($j) => $j['status'] === 'berjalan'));
 $terjadwal   = count(array_filter($jadwals, fn($j) => $j['status'] === 'terjadwal'));
 $selesai     = count(array_filter($jadwals, fn($j) => $j['status'] === 'selesai'));
 $ditunda     = count(array_filter($jadwals, fn($j) => $j['status'] === 'ditunda'));
 
-// Upcoming events (7 hari ke depan)
+// Agenda Terdekat (14 hari ke depan atau yang sedang berjalan)
 $today = date('Y-m-d');
-$nextWeek = date('Y-m-d', strtotime('+7 days'));
-$upcoming = array_filter($jadwals, function($j) use ($today, $nextWeek) {
-    return $j['tanggal_mulai'] <= $nextWeek && $j['tanggal_selesai'] >= $today && $j['status'] !== 'selesai';
+$next2Weeks = date('Y-m-d', strtotime('+14 days'));
+$upcoming = array_filter($jadwals, function($j) use ($today, $next2Weeks) {
+    return $j['tanggal_mulai'] <= $next2Weeks && $j['tanggal_selesai'] >= $today && $j['status'] !== 'selesai';
 });
-usort($upcoming, fn($a, $b) => strtotime($a['tanggal_mulai']) - strtotime($b['tanggal_mulai']));
-$upcoming = array_slice($upcoming, 0, 5);
-
-// Pelanggan untuk filter
-$pelangganList = $db->query("SELECT id, nama_pelanggan FROM pelanggan ORDER BY nama_pelanggan")->fetchAll();
 
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
 ?>
 
-<!-- FullCalendar -->
+<!-- FullCalendar v6 -->
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/interaction@6.1.9/index.global.min.js"></script>
 
-<!-- Breadcrumb -->
-<nav class="breadcrumb mb-3">
-    <a href="<?= BASE_URL ?>/pages/dashboard/index.php">Dashboard</a>
-    <span class="sep"><i class="bi bi-chevron-right text-[10px]"></i></span>
-    <a href="<?= BASE_URL ?>/pages/proyek/index.php">Proyek</a>
-    <span class="sep"><i class="bi bi-chevron-right text-[10px]"></i></span>
-    <span class="current">Kalender Jadwal</span>
-</nav>
-
-<!-- Header Premium -->
-<div class="flex items-start justify-between mb-6 flex-wrap gap-4">
-    <div class="flex items-center gap-4">
-        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
-            <i class="bi bi-calendar3 text-2xl"></i>
-        </div>
-        <div>
-            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Kalender Jadwal Instalasi</h2>
-            <p class="text-sm text-slate-500 mt-0.5">Kelola timeline proyek dengan visual interaktif</p>
-        </div>
-    </div>
-    <div class="flex gap-2">
-        <a href="<?= BASE_URL ?>/pages/proyek/gantt.php" class="btn-secondary">
-            <i class="bi bi-bar-chart-steps"></i>
-            <span class="hidden sm:inline">Gantt Chart</span>
-        </a>
-        <a href="<?= BASE_URL ?>/pages/jadwal/create.php" class="btn-primary">
-            <i class="bi bi-calendar-plus"></i>
-            <span class="hidden sm:inline">Tambah Jadwal</span>
-        </a>
-    </div>
-</div>
-
-<!-- Stats Cards Premium -->
-<div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
-    <?php
-    $statsCards = [
-        ['val' => $totalJadwal, 'label' => 'Total Jadwal',  'icon' => 'bi-calendar3',        'gradient' => 'from-slate-500 to-slate-700',    'light' => 'bg-slate-50'],
-        ['val' => $berjalan,    'label' => 'Sedang Berjalan','icon' => 'bi-play-circle-fill',  'gradient' => 'from-blue-500 to-blue-700',      'light' => 'bg-blue-50'],
-        ['val' => $terjadwal,   'label' => 'Terjadwal',     'icon' => 'bi-clock-fill',        'gradient' => 'from-indigo-500 to-indigo-700',  'light' => 'bg-indigo-50'],
-        ['val' => $selesai,     'label' => 'Selesai',       'icon' => 'bi-check-circle-fill', 'gradient' => 'from-emerald-500 to-emerald-700','light' => 'bg-emerald-50'],
-        ['val' => $ditunda,     'label' => 'Ditunda',       'icon' => 'bi-pause-circle-fill', 'gradient' => 'from-amber-500 to-amber-700',    'light' => 'bg-amber-50'],
-    ];
-    foreach ($statsCards as $i => $s):
-    ?>
-    <div class="card p-4 relative overflow-hidden group hover:shadow-lg transition-all">
-        <div class="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-gradient-to-br <?= $s['gradient'] ?> opacity-10 group-hover:opacity-20 transition-opacity"></div>
-        <div class="relative flex items-start justify-between">
+<div class="max-w-7xl mx-auto">
+    <!-- Header Halaman -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
+        <div class="flex items-center gap-3.5">
+            <span class="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary-600 to-indigo-700 text-white flex items-center justify-center shadow-lg shadow-primary-600/25">
+                <i class="bi bi-calendar3 text-lg"></i>
+            </span>
             <div>
-                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider"><?= $s['label'] ?></p>
-                <p class="text-3xl font-extrabold text-slate-900 mt-1 tracking-tight"><?= $s['val'] ?></p>
-            </div>
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br <?= $s['gradient'] ?> flex items-center justify-center text-white shadow-md">
-                <i class="bi <?= $s['icon'] ?>"></i>
+                <h2 class="text-xl font-bold text-slate-900 tracking-tight">Jadwal Instalasi & Timeline</h2>
+                <p class="text-xs text-slate-500 mt-0.5">Klik tanggal di kalender untuk menambah jadwal baru, atau geser (*drag*) jadwal untuk *reschedule*</p>
             </div>
         </div>
-    </div>
-    <?php endforeach; ?>
-</div>
 
-<!-- Filter Bar Modern -->
-<div class="card p-4 mb-5">
-    <div class="flex flex-wrap items-center gap-3">
-        <!-- Search -->
-        <div class="relative flex-1 min-w-[200px]">
-            <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-            <input type="text" id="calendarSearch" placeholder="Cari proyek atau pelanggan..."
-                class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
-        </div>
-
-        <!-- Filter Status -->
-        <div class="flex gap-1 bg-slate-100 p-1 rounded-xl">
-            <button type="button" data-filter-status="" class="status-filter px-3 py-1.5 text-xs font-semibold rounded-lg transition-all bg-white text-slate-900 shadow-sm">
-                Semua
-            </button>
-            <?php foreach ($statusMeta as $key => $meta): ?>
-            <button type="button" data-filter-status="<?= $key ?>"
-                class="status-filter px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-600 hover:text-slate-900">
-                <i class="bi <?= $meta['icon'] ?> mr-1" style="color: <?= $meta['color'] ?>"></i>
-                <?= $meta['label'] ?>
-            </button>
-            <?php endforeach; ?>
-        </div>
-
-        <!-- View Switcher -->
-        <div class="flex gap-1 bg-slate-100 p-1 rounded-xl">
-            <button type="button" data-view="dayGridMonth" class="view-switch px-3 py-1.5 text-xs font-semibold rounded-lg transition-all bg-white text-slate-900 shadow-sm" title="Bulan (M)">
-                <i class="bi bi-grid-3x3-gap mr-1"></i>Bulan
-            </button>
-            <button type="button" data-view="timeGridWeek" class="view-switch px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-600 hover:text-slate-900" title="Minggu (W)">
-                <i class="bi bi-layout-three-columns mr-1"></i>Minggu
-            </button>
-            <button type="button" data-view="listWeek" class="view-switch px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-600 hover:text-slate-900" title="Agenda (L)">
-                <i class="bi bi-list-ul mr-1"></i>Agenda
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Main Layout: Calendar + Side Panel -->
-<div class="grid grid-cols-1 xl:grid-cols-4 gap-5">
-    <!-- Calendar -->
-    <div class="xl:col-span-3">
-        <div class="card p-5">
-            <div id="calendar"></div>
-        </div>
-    </div>
-
-    <!-- Side Panel: Upcoming Events -->
-    <div class="xl:col-span-1">
-        <div class="card overflow-hidden sticky top-4">
-            <div class="px-5 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
-                <div class="flex items-center gap-2">
-                    <i class="bi bi-rocket-takeoff text-lg"></i>
-                    <h3 class="text-sm font-bold">Akan Datang</h3>
-                </div>
-                <p class="text-xs opacity-80 mt-1">7 hari ke depan</p>
-            </div>
-
-            <?php if (empty($upcoming)): ?>
-            <div class="px-5 py-10 text-center">
-                <div class="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                    <i class="bi bi-calendar-check text-2xl text-slate-400"></i>
-                </div>
-                <p class="text-sm text-slate-500 font-medium">Tidak ada jadwal</p>
-                <p class="text-xs text-slate-400 mt-1">dalam 7 hari ke depan</p>
-            </div>
-            <?php else: ?>
-            <div class="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
-                <?php foreach ($upcoming as $u):
-                    $meta = $statusMeta[$u['status']] ?? $statusMeta['terjadwal'];
-                    $start = new DateTime($u['tanggal_mulai']);
-                    $isToday = $start->format('Y-m-d') === date('Y-m-d');
-                    $isTomorrow = $start->format('Y-m-d') === date('Y-m-d', strtotime('+1 day'));
-                ?>
-                <a href="<?= BASE_URL ?>/pages/proyek/show.php?id=<?= $u['proyek_id'] ?>"
-                    class="block px-5 py-3.5 hover:bg-slate-50 transition-colors group">
-                    <div class="flex items-start gap-3">
-                        <div class="flex-shrink-0 text-center">
-                            <div class="text-xs font-bold text-slate-400 uppercase"><?= date('M', strtotime($u['tanggal_mulai'])) ?></div>
-                            <div class="text-xl font-extrabold <?= $isToday ? 'text-indigo-600' : 'text-slate-800' ?> leading-none">
-                                <?= date('d', strtotime($u['tanggal_mulai'])) ?>
-                            </div>
-                            <?php if ($isToday): ?>
-                            <div class="text-[9px] font-bold text-indigo-600 mt-0.5">HARI INI</div>
-                            <?php elseif ($isTomorrow): ?>
-                            <div class="text-[9px] font-bold text-amber-600 mt-0.5">BESOK</div>
-                            <?php endif; ?>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-semibold text-slate-800 truncate group-hover:text-indigo-600 transition-colors">
-                                <?= sanitize($u['nama_proyek']) ?>
-                            </p>
-                            <p class="text-xs text-slate-400 truncate mt-0.5">
-                                <i class="bi bi-person mr-1"></i><?= sanitize($u['nama_pelanggan']) ?>
-                            </p>
-                            <div class="flex items-center gap-2 mt-2">
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
-                                    style="background: <?= $meta['color'] ?>20; color: <?= $meta['color'] ?>">
-                                    <i class="bi <?= $meta['icon'] ?>"></i>
-                                    <?= $meta['label'] ?>
-                                </span>
-                                <span class="text-[10px] text-slate-400">
-                                    <?= $u['durasi_hari'] ?> hari
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-                <?php endforeach; ?>
-            </div>
-            <?php endif; ?>
-
-            <!-- Keyboard Shortcuts -->
-            <div class="px-5 py-3 bg-slate-50 border-t border-slate-100">
-                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Keyboard Shortcuts</p>
-                <div class="grid grid-cols-2 gap-1.5 text-xs">
-                    <div class="flex items-center gap-2">
-                        <kbd class="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-mono font-bold text-slate-600">T</kbd>
-                        <span class="text-slate-500">Hari ini</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <kbd class="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-mono font-bold text-slate-600">M</kbd>
-                        <span class="text-slate-500">Bulan</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <kbd class="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-mono font-bold text-slate-600">W</kbd>
-                        <span class="text-slate-500">Minggu</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <kbd class="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-mono font-bold text-slate-600">N</kbd>
-                        <span class="text-slate-500">Baru</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Detail Event Premium -->
-<div id="modalEvent" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" onclick="closeEventModal()">
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all" onclick="event.stopPropagation()" id="modalContent">
-        <!-- Header dengan gradient dinamis -->
-        <div id="eventHeader" class="px-6 py-5 text-white relative overflow-hidden" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-            <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(circle at 20% 50%, white 1px, transparent 1px); background-size: 20px 20px;"></div>
-            <div class="relative flex items-start justify-between gap-3">
-                <div class="flex items-start gap-3 min-w-0 flex-1">
-                    <div class="w-12 h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
-                        <i class="bi bi-calendar-event text-xl" id="eventIcon"></i>
-                    </div>
-                    <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="px-2 py-0.5 bg-white/20 backdrop-blur rounded-full text-[10px] font-bold uppercase tracking-wider" id="eventStatus">Status</span>
-                            <span class="text-xs opacity-80" id="eventDurasi">-</span>
-                        </div>
-                        <h3 class="text-lg font-bold truncate" id="eventTitle">Judul</h3>
-                    </div>
-                </div>
-                <button onclick="closeEventModal()" class="p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors flex-shrink-0">
-                    <i class="bi bi-x-lg"></i>
+        <div class="flex items-center gap-2">
+            <!-- Toggle Mode Kalender vs Tabel -->
+            <div class="inline-flex bg-slate-200/70 p-1 rounded-xl">
+                <button type="button" id="btnModeCalendar" onclick="switchMainMode('calendar')"
+                    class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-slate-900 shadow-xs flex items-center gap-1.5">
+                    <i class="bi bi-calendar-week"></i> Kalender
+                </button>
+                <button type="button" id="btnModeTable" onclick="switchMainMode('table')"
+                    class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 flex items-center gap-1.5">
+                    <i class="bi bi-table"></i> Tabel Daftar (<?= $totalJadwal ?>)
                 </button>
             </div>
 
-            <!-- Progress bar di header -->
-            <div class="relative mt-4">
-                <div class="flex justify-between text-xs mb-1.5">
-                    <span class="opacity-80">Progress Proyek</span>
-                    <span class="font-bold" id="eventProgresLabel">0%</span>
+            <a href="<?= BASE_URL ?>/pages/proyek/gantt.php" class="btn-secondary btn-sm">
+                <i class="bi bi-bar-chart-steps"></i> <span class="hidden sm:inline">Gantt Chart</span>
+            </a>
+            <button type="button" onclick="openQuickCreateModal('<?= date('Y-m-d') ?>', '<?= date('Y-m-d', strtotime('+3 days')) ?>')" class="btn-primary btn-sm">
+                <i class="bi bi-plus-lg"></i> Tambah Jadwal
+            </button>
+        </div>
+    </div>
+
+    <!-- Stat Cards Ringkas (Bisa Diklik untuk Filter Status) -->
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+        <?php
+        $statItems = [
+            ['key' => '',          'val' => $totalJadwal, 'label' => 'Semua Jadwal',    'accent' => '#475569', 'icon' => 'bi-layers-fill',       'cls' => 'bg-slate-100 text-slate-600'],
+            ['key' => 'berjalan',  'val' => $berjalan,    'label' => 'Sedang Berjalan', 'accent' => '#4f46e5', 'icon' => 'bi-play-circle-fill',  'cls' => 'bg-indigo-50 text-indigo-600'],
+            ['key' => 'terjadwal', 'val' => $terjadwal,   'label' => 'Terjadwal',       'accent' => '#64748b', 'icon' => 'bi-clock-fill',        'cls' => 'bg-slate-100 text-slate-600'],
+            ['key' => 'selesai',   'val' => $selesai,     'label' => 'Selesai',         'accent' => '#10b981', 'icon' => 'bi-check-circle-fill', 'cls' => 'bg-emerald-50 text-emerald-600'],
+            ['key' => 'ditunda',   'val' => $ditunda,     'label' => 'Ditunda',         'accent' => '#f59e0b', 'icon' => 'bi-pause-circle-fill', 'cls' => 'bg-amber-50 text-amber-600'],
+        ];
+        foreach ($statItems as $st):
+        ?>
+        <button type="button" onclick="triggerStatusFilter('<?= $st['key'] ?>')"
+            data-stat-card="<?= $st['key'] ?>"
+            class="stat-filter-card card p-4 text-left stat-card hover:shadow-md transition-all <?= $st['key'] === '' ? 'ring-2 ring-primary-500' : '' ?>"
+            style="--stat-accent: <?= $st['accent'] ?>">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider"><?= $st['label'] ?></p>
+                    <p class="text-2xl font-extrabold text-slate-900 mt-1 leading-none"><?= $st['val'] ?></p>
                 </div>
-                <div class="h-2 bg-white/20 rounded-full overflow-hidden">
-                    <div class="h-full bg-white rounded-full transition-all" id="eventProgresBar" style="width: 0%"></div>
+                <span class="w-9 h-9 rounded-xl <?= $st['cls'] ?> flex items-center justify-center">
+                    <i class="bi <?= $st['icon'] ?> text-base"></i>
+                </span>
+            </div>
+        </button>
+        <?php endforeach; ?>
+    </div>
+
+    <!-- Filter & Toolbar -->
+    <div class="card p-3.5 mb-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <!-- Pencarian Cepat -->
+            <div class="relative flex-1 min-w-[220px]">
+                <i class="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input type="text" id="calendarSearch" placeholder="Cari nama proyek, pelanggan, atau keterangan jadwal..."
+                    class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+            </div>
+
+            <!-- Navigasi Kalender Custom (Hanya muncul di Mode Kalender) -->
+            <div id="calendarCustomNav" class="flex flex-wrap items-center gap-2">
+                <div class="inline-flex items-center bg-slate-100 p-1 rounded-xl">
+                    <button type="button" onclick="window.pltsCalendar?.prev()" class="p-1.5 px-2.5 rounded-lg hover:bg-white text-slate-600 transition-all" title="Sebelumnya">
+                        <i class="bi bi-chevron-left text-xs"></i>
+                    </button>
+                    <button type="button" onclick="window.pltsCalendar?.today()" class="px-3 py-1 rounded-lg hover:bg-white text-xs font-bold text-slate-700 transition-all">
+                        Hari Ini
+                    </button>
+                    <button type="button" onclick="window.pltsCalendar?.next()" class="p-1.5 px-2.5 rounded-lg hover:bg-white text-slate-600 transition-all" title="Berikutnya">
+                        <i class="bi bi-chevron-right text-xs"></i>
+                    </button>
+                </div>
+
+                <span id="calendarTitleLabel" class="text-sm font-extrabold text-slate-800 px-2 min-w-[140px] text-center">-</span>
+
+                <div class="inline-flex bg-slate-100 p-1 rounded-xl">
+                    <button type="button" data-view="dayGridMonth" class="view-switch px-3 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-slate-900 shadow-2xs">
+                        Bulan
+                    </button>
+                    <button type="button" data-view="timeGridWeek" class="view-switch px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900">
+                        Minggu
+                    </button>
+                    <button type="button" data-view="listMonth" class="view-switch px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900">
+                        Agenda
+                    </button>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Body -->
-        <div class="p-6 space-y-4">
-            <!-- Info Grid -->
-            <div class="grid grid-cols-2 gap-3">
-                <div class="p-3 bg-slate-50 rounded-xl">
-                    <div class="flex items-center gap-2 mb-1">
-                        <i class="bi bi-person text-slate-400 text-sm"></i>
-                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Pelanggan</span>
-                    </div>
-                    <p class="text-sm font-semibold text-slate-800 truncate" id="eventPelanggan">-</p>
-                </div>
-                <div class="p-3 bg-slate-50 rounded-xl">
-                    <div class="flex items-center gap-2 mb-1">
-                        <i class="bi bi-calendar-event text-slate-400 text-sm"></i>
-                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Periode</span>
-                    </div>
-                    <p class="text-sm font-semibold text-slate-800" id="eventPeriode">-</p>
-                </div>
-            </div>
-
-            <!-- Keterangan -->
-            <div class="p-3 bg-slate-50 rounded-xl">
-                <div class="flex items-center gap-2 mb-1.5">
-                    <i class="bi bi-card-text text-slate-400 text-sm"></i>
-                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Keterangan</span>
-                </div>
-                <p class="text-sm text-slate-700 leading-relaxed" id="eventKeterangan">-</p>
+    <!-- ==========================================================
+         MODE 1: TAMPILAN KALENDER + SIDEBAR AGENDA
+    =========================================================== -->
+    <div id="sectionCalendarView" class="grid grid-cols-1 xl:grid-cols-12 gap-5">
+        <!-- Kalender Utama -->
+        <div class="xl:col-span-9">
+            <div class="card p-4 sm:p-5">
+                <div id="calendar"></div>
             </div>
         </div>
 
-        <!-- Footer Actions -->
-        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex gap-2">
-            <a href="#" id="eventProyekLink" class="flex-1 btn-secondary justify-center text-xs">
-                <i class="bi bi-eye"></i> Lihat Proyek
-            </a>
-            <a href="#" id="eventEditLink" class="flex-1 btn-primary justify-center text-xs">
-                <i class="bi bi-pencil"></i> Edit Jadwal
-            </a>
+        <!-- Panel Kanan: Agenda Aktif & Terdekat -->
+        <div class="xl:col-span-3">
+            <div class="card overflow-hidden sticky top-6">
+                <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <i class="bi bi-lightning-charge-fill text-amber-500"></i> Agenda Terdekat
+                        </h3>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Jadwal aktif & 14 hari ke depan</p>
+                    </div>
+                    <span class="badge-modern bg-slate-100 text-slate-700"><?= count($upcoming) ?></span>
+                </div>
+
+                <?php if (empty($upcoming)): ?>
+                <div class="p-8 text-center">
+                    <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2.5">
+                        <i class="bi bi-calendar2-check text-xl"></i>
+                    </div>
+                    <p class="text-xs font-semibold text-slate-600">Tidak ada jadwal mendesak</p>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Semua agenda 2 minggu ke depan kosong</p>
+                </div>
+                <?php else: ?>
+                <div class="divide-y divide-slate-100 max-h-[580px] overflow-y-auto">
+                    <?php foreach ($upcoming as $u):
+                        $meta = $statusMeta[$u['status']] ?? $statusMeta['terjadwal'];
+                        $isOngoing = ($u['tanggal_mulai'] <= $today && $u['tanggal_selesai'] >= $today);
+                    ?>
+                    <div class="p-4 hover:bg-slate-50/80 transition-colors">
+                        <div class="flex items-start gap-3">
+                            <div class="w-11 h-12 rounded-xl border border-slate-200 bg-white flex flex-col items-center justify-center flex-shrink-0 shadow-2xs">
+                                <span class="text-[9px] font-extrabold uppercase text-slate-400 leading-none"><?= date('M', strtotime($u['tanggal_mulai'])) ?></span>
+                                <span class="text-base font-extrabold text-slate-800 leading-tight mt-0.5"><?= date('d', strtotime($u['tanggal_mulai'])) ?></span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-1.5 mb-1">
+                                    <span class="w-2 h-2 rounded-full" style="background: <?= $meta['color'] ?>"></span>
+                                    <span class="text-[10px] font-bold uppercase tracking-wider" style="color: <?= $meta['color'] ?>">
+                                        <?= $isOngoing ? 'Sedang Berlangsung' : $meta['label'] ?>
+                                    </span>
+                                </div>
+                                <a href="<?= BASE_URL ?>/pages/proyek/show.php?id=<?= $u['proyek_id'] ?>"
+                                   class="text-xs font-bold text-slate-800 hover:text-primary-600 truncate block">
+                                    <?= sanitize($u['nama_proyek']) ?>
+                                </a>
+                                <p class="text-[11px] text-slate-500 truncate mt-0.5"><?= sanitize($u['keterangan'] ?: $u['nama_pelanggan']) ?></p>
+
+                                <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100 text-[11px]">
+                                    <span class="text-slate-400"><i class="bi bi-clock"></i> <?= max(1, (int)$u['durasi_hari']) ?> hari</span>
+                                    <a href="<?= BASE_URL ?>/pages/jadwal/edit.php?id=<?= $u['id'] ?>"
+                                       class="font-semibold text-primary-600 hover:text-primary-800 inline-flex items-center gap-1">
+                                        <i class="bi bi-pencil-square"></i> Edit
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================================
+         MODE 2: TAMPILAN TABEL DAFTAR JADWAL (DENGAN AKSI EDIT & HAPUS)
+    =========================================================== -->
+    <div id="sectionTableView" class="card overflow-hidden hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr>
+                        <th class="table-header">Proyek & Pelanggan</th>
+                        <th class="table-header">Tahapan / Keterangan</th>
+                        <th class="table-header">Periode Jadwal</th>
+                        <th class="table-header">Durasi</th>
+                        <th class="table-header">Status</th>
+                        <th class="table-header text-right">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100" id="jadwalTableBody">
+                    <?php if (empty($jadwals)): ?>
+                    <tr>
+                        <td colspan="6" class="table-cell text-center py-12 text-slate-400">
+                            Belum ada data jadwal instalasi.
+                        </td>
+                    </tr>
+                    <?php else: ?>
+                    <?php foreach ($jadwals as $j):
+                        $meta = $statusMeta[$j['status']] ?? $statusMeta['terjadwal'];
+                    ?>
+                    <tr class="table-row jadwal-row-item"
+                        data-status="<?= $j['status'] ?>"
+                        data-search="<?= strtolower(sanitize($j['nama_proyek'] . ' ' . $j['nama_pelanggan'] . ' ' . ($j['keterangan'] ?? ''))) ?>">
+                        <td class="table-cell">
+                            <a href="<?= BASE_URL ?>/pages/proyek/show.php?id=<?= $j['proyek_id'] ?>" class="font-bold text-slate-800 hover:text-primary-600 block">
+                                <?= sanitize($j['nama_proyek']) ?>
+                            </a>
+                            <span class="text-xs text-slate-400"><?= sanitize($j['nama_pelanggan']) ?></span>
+                        </td>
+                        <td class="table-cell">
+                            <span class="text-sm text-slate-700"><?= sanitize($j['keterangan'] ?: '-') ?></span>
+                        </td>
+                        <td class="table-cell whitespace-nowrap">
+                            <div class="text-xs font-semibold text-slate-700">
+                                <?= formatTanggal($j['tanggal_mulai']) ?> — <?= formatTanggal($j['tanggal_selesai']) ?>
+                            </div>
+                        </td>
+                        <td class="table-cell whitespace-nowrap">
+                            <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg">
+                                <?= max(1, (int)$j['durasi_hari']) ?> hari
+                            </span>
+                        </td>
+                        <td class="table-cell whitespace-nowrap">
+                            <?= statusBadge($j['status']) ?>
+                        </td>
+                        <td class="table-cell text-right whitespace-nowrap">
+                            <div class="inline-flex items-center gap-1.5">
+                                <a href="<?= BASE_URL ?>/pages/jadwal/edit.php?id=<?= $j['id'] ?>"
+                                   class="btn-secondary btn-sm" title="Edit Jadwal">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </a>
+                                <form method="POST" action="<?= BASE_URL ?>/api/jadwal/delete.php" class="inline"
+                                      onsubmit="event.preventDefault(); confirmDelete(this, 'Hapus jadwal untuk proyek <?= addslashes(sanitize($j['nama_proyek'])) ?>?')">
+                                    <?= csrfField() ?>
+                                    <input type="hidden" name="id" value="<?= $j['id'] ?>">
+                                    <button type="submit" class="btn-secondary btn-sm text-red-600 hover:bg-red-50" title="Hapus Jadwal">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
-<!-- FAB Quick Create -->
-<a href="<?= BASE_URL ?>/pages/jadwal/create.php"
-    class="fixed bottom-8 right-8 z-40 w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-2xl shadow-2xl shadow-indigo-500/40 flex items-center justify-center transition-all hover:scale-110 hover:rotate-90 group"
-    title="Tambah Jadwal Baru (N)">
-    <i class="bi bi-plus-lg text-2xl"></i>
-    <span class="absolute right-full mr-3 px-3 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-        Tambah Jadwal
-    </span>
-</a>
+<!-- ==========================================================
+     MODAL 1: DETAIL & QUICK-EDIT JADWAL
+=========================================================== -->
+<div id="modalEvent" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4" onclick="if(event.target===this) closeEventModal()">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100" onclick="event.stopPropagation()">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+                <div id="eventBadgeIcon" class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                    <i class="bi bi-calendar-event text-lg" id="eventIcon"></i>
+                </div>
+                <div class="min-w-0">
+                    <span id="eventStatus" class="text-[11px] font-bold uppercase tracking-wider text-indigo-600 block">Status</span>
+                    <h3 id="eventTitle" class="text-base font-bold text-slate-900 truncate">Nama Proyek</h3>
+                </div>
+            </div>
+            <button type="button" onclick="closeEventModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pelanggan</span>
+                    <p id="eventPelanggan" class="text-xs font-bold text-slate-800 mt-1 truncate">-</p>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Durasi & Periode</span>
+                    <p id="eventPeriode" class="text-xs font-bold text-slate-800 mt-1">-</p>
+                </div>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Tahapan / Keterangan Pekerjaan</span>
+                <p id="eventKeterangan" class="text-sm text-slate-700 leading-relaxed">-</p>
+            </div>
+
+            <div>
+                <div class="flex justify-between text-xs mb-1.5">
+                    <span class="font-semibold text-slate-500">Progres Proyek Saat Ini</span>
+                    <span id="eventProgresLabel" class="font-bold text-primary-700">0%</span>
+                </div>
+                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div id="eventProgresBar" class="h-full bg-primary-600 rounded-full transition-all" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Quick Update Status Langsung dari Modal -->
+            <form method="POST" action="<?= BASE_URL ?>/api/jadwal/update.php" class="pt-3 border-t border-slate-100">
+                <?= csrfField() ?>
+                <input type="hidden" name="id" id="quickEditId">
+                <input type="hidden" name="proyek_id" id="quickEditProyekId">
+                <input type="hidden" name="tanggal_mulai" id="quickEditMulai">
+                <input type="hidden" name="tanggal_selesai" id="quickEditSelesai">
+                <input type="hidden" name="keterangan" id="quickEditKeterangan">
+
+                <label class="form-label text-xs">Ubah Cepat Status Jadwal:</label>
+                <div class="flex gap-2">
+                    <select name="status" id="quickEditStatus" class="form-select py-2 text-xs flex-1">
+                        <option value="terjadwal">Terjadwal</option>
+                        <option value="berjalan">Sedang Berjalan</option>
+                        <option value="selesai">Selesai</option>
+                        <option value="ditunda">Ditunda</option>
+                    </select>
+                    <button type="submit" class="btn-primary btn-sm">
+                        <i class="bi bi-check2"></i> Update Status
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2">
+            <form method="POST" action="<?= BASE_URL ?>/api/jadwal/delete.php" id="modalDeleteForm"
+                  onsubmit="event.preventDefault(); confirmDelete(this, 'Yakin ingin menghapus jadwal ini?')">
+                <?= csrfField() ?>
+                <input type="hidden" name="id" id="deleteJadwalId">
+                <button type="submit" class="btn-secondary btn-sm text-red-600 hover:bg-red-50">
+                    <i class="bi bi-trash"></i> Hapus
+                </button>
+            </form>
+
+            <div class="flex items-center gap-2">
+                <a href="#" id="eventProyekLink" class="btn-secondary btn-sm">
+                    <i class="bi bi-diagram-3"></i> Detail Proyek
+                </a>
+                <a href="#" id="eventEditLink" class="btn-primary btn-sm">
+                    <i class="bi bi-pencil-square"></i> Edit Lengkap
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================================
+     MODAL 2: QUICK-CREATE JADWAL (SAAT KLIK TANGGAL DI KALENDER)
+=========================================================== -->
+<div id="modalQuickCreate" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4" onclick="if(event.target===this) closeQuickCreateModal()">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100" onclick="event.stopPropagation()">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div>
+                <h3 class="text-base font-bold text-slate-900">Tambah Jadwal Instalasi</h3>
+                <p class="text-xs text-slate-400">Buat jadwal baru langsung pada tanggal terpilih</p>
+            </div>
+            <button type="button" onclick="closeQuickCreateModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <form method="POST" action="<?= BASE_URL ?>/api/jadwal/store.php" class="p-6 space-y-4">
+            <?= csrfField() ?>
+            <div>
+                <label class="form-label">Pilih Proyek <span class="text-red-500">*</span></label>
+                <select name="proyek_id" class="form-select" required>
+                    <option value="">-- Pilih Proyek PLTS --</option>
+                    <?php foreach ($proyeksAktif as $p): ?>
+                    <option value="<?= $p['id'] ?>"><?= sanitize($p['nama_proyek']) ?> — <?= sanitize($p['nama_pelanggan']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="form-label">Tanggal Mulai <span class="text-red-500">*</span></label>
+                    <input type="date" name="tanggal_mulai" id="qcTanggalMulai" class="form-input" required>
+                </div>
+                <div>
+                    <label class="form-label">Tanggal Selesai <span class="text-red-500">*</span></label>
+                    <input type="date" name="tanggal_selesai" id="qcTanggalSelesai" class="form-input" required>
+                </div>
+            </div>
+
+            <div>
+                <label class="form-label">Tahapan / Keterangan Pekerjaan</label>
+                <input type="text" name="keterangan" class="form-input" placeholder="Contoh: Pemasangan mounting & panel blok B">
+            </div>
+
+            <div class="flex gap-2.5 pt-2">
+                <button type="button" onclick="closeQuickCreateModal()" class="btn-secondary flex-1 justify-center">Batal</button>
+                <button type="submit" class="btn-primary flex-1 justify-center">
+                    <i class="bi bi-check-lg"></i> Simpan Jadwal
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <style>
-/* ====== CALENDAR PREMIUM STYLING ====== */
+/* Styling Kalender Bersih & Modern (Linear / Notion Calendar Style) */
 .fc {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
 }
-
-.fc .fc-toolbar {
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 1.5rem !important;
-}
-
-.fc .fc-toolbar-title {
-    font-size: 1.25rem !important;
-    font-weight: 800 !important;
-    color: #1e293b;
-    letter-spacing: -0.02em;
-}
-
-html.dark .fc .fc-toolbar-title {
-    color: #f1f5f9 !important;
-}
-
-.fc .fc-button {
-    background: #fff !important;
-    border: 1.5px solid #e2e8f0 !important;
-    color: #475569 !important;
-    font-size: 0.8rem !important;
-    font-weight: 600 !important;
-    padding: 0.5rem 1rem !important;
-    text-transform: capitalize !important;
-    box-shadow: none !important;
-    border-radius: 10px !important;
-    transition: all 0.2s !important;
-}
-
-html.dark .fc .fc-button {
-    background: #1e293b !important;
-    border-color: #334155 !important;
-    color: #cbd5e1 !important;
-}
-
-.fc .fc-button:hover {
-    background: #f8fafc !important;
-    border-color: #cbd5e1 !important;
-    transform: translateY(-1px);
-}
-
-html.dark .fc .fc-button:hover {
-    background: #334155 !important;
-}
-
-.fc .fc-button-primary:not(:disabled).fc-button-active {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
-    border-color: #6366f1 !important;
-    color: #fff !important;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
-}
-
-.fc .fc-button-primary:disabled {
-    opacity: 0.5 !important;
-}
-
-.fc .fc-today-button {
-    background: #f1f5f9 !important;
-    border-color: #e2e8f0 !important;
-    color: #475569 !important;
-    font-weight: 700 !important;
-}
-
-.fc .fc-today-button:hover {
-    background: #e2e8f0 !important;
-}
-
-.fc .fc-today-button:disabled {
-    opacity: 0.4 !important;
-}
-
 .fc .fc-col-header-cell {
-    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-    padding: 0.75rem 0;
-    border-bottom: 2px solid #e2e8f0 !important;
+    background: #f8fafc;
+    padding: 10px 0 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
 }
-
-html.dark .fc .fc-col-header-cell {
-    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-    border-color: #334155 !important;
-}
-
 .fc .fc-col-header-cell-cushion {
-    color: #64748b;
-    font-size: 0.7rem;
-    font-weight: 700;
+    font-size: 11px !important;
+    font-weight: 700 !important;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    text-decoration: none;
+    letter-spacing: 0.06em;
+    color: #64748b !important;
+    text-decoration: none !important;
 }
-
+.fc .fc-daygrid-day-frame {
+    min-height: 105px;
+    padding: 4px !important;
+    transition: background 0.15s ease;
+}
+.fc .fc-daygrid-day:hover {
+    background: #f8fafc;
+}
 .fc .fc-daygrid-day-number {
-    color: #475569;
-    font-size: 0.85rem;
-    font-weight: 600;
-    padding: 0.5rem;
-    text-decoration: none;
-}
-
-html.dark .fc .fc-daygrid-day-number {
-    color: #cbd5e1;
-}
-
-.fc .fc-day-today {
-    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%) !important;
-}
-
-html.dark .fc .fc-day-today {
-    background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(99,102,241,0.05)) !important;
-}
-
-.fc .fc-day-today .fc-daygrid-day-number {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: white !important;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    margin: 4px;
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
-}
-
-.fc .fc-event {
-    border: none !important;
-    border-radius: 8px !important;
-    padding: 3px 8px !important;
-    font-size: 0.72rem !important;
+    font-size: 12px !important;
     font-weight: 600 !important;
+    color: #475569 !important;
+    padding: 4px 8px !important;
+    text-decoration: none !important;
+}
+.fc .fc-day-today {
+    background: rgba(99, 102, 241, 0.04) !important;
+}
+.fc .fc-day-today .fc-daygrid-day-number {
+    background: #4f46e5;
+    color: #fff !important;
+    border-radius: 8px;
+    padding: 2px 7px !important;
+    margin: 2px;
+}
+.fc .fc-event {
+    border-radius: 7px !important;
+    border-width: 0 0 0 3px !important;
+    padding: 3px 7px !important;
+    margin: 2px 3px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-    margin: 1px 0 !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-
 .fc .fc-event:hover {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-    z-index: 10;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.10);
 }
-
-.fc .fc-event-title {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.fc .fc-daygrid-event-dot {
-    display: none;
-}
-
 .fc td, .fc th {
     border-color: #f1f5f9 !important;
 }
-
-html.dark .fc td, html.dark .fc th {
-    border-color: #334155 !important;
-}
-
 .fc .fc-scrollgrid {
     border-color: #e2e8f0 !important;
-    border-radius: 16px;
+    border-radius: 14px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-html.dark .fc .fc-scrollgrid {
-    border-color: #334155 !important;
-}
-
-.fc .fc-daygrid-day-frame {
-    padding: 2px;
-    min-height: 90px;
-}
-
-.fc .fc-day-other .fc-daygrid-day-number {
-    opacity: 0.3;
-}
-
-.fc .fc-day-other {
-    background: #fafafa !important;
-}
-
-html.dark .fc .fc-day-other {
-    background: #0f172a !important;
-}
-
-/* Event custom content */
-.event-custom {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    width: 100%;
-}
-
-.event-custom-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 4px;
-}
-
-.event-custom-title {
-    font-weight: 700;
-    font-size: 0.72rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex: 1;
-}
-
-.event-custom-pelanggan {
-    font-size: 0.65rem;
-    opacity: 0.85;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.event-custom-progress {
-    height: 3px;
-    background: rgba(255,255,255,0.3);
-    border-radius: 9999px;
-    overflow: hidden;
-    margin-top: 2px;
-}
-
-.event-custom-progress-bar {
-    height: 100%;
-    background: rgba(255,255,255,0.9);
-    border-radius: 9999px;
-    transition: width 0.6s ease;
-}
-
-/* Modal animation */
-#modalEvent.hidden #modalContent {
-    transform: scale(0.95);
-    opacity: 0;
-}
-
-#modalContent {
-    animation: modalIn 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes modalIn {
-    from { transform: scale(0.95) translateY(10px); opacity: 0; }
-    to { transform: scale(1) translateY(0); opacity: 1; }
-}
-
-/* Filter status button */
-.status-filter.active {
-    background: white !important;
-    color: #0f172a !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-html.dark .status-filter.active {
-    background: #334155 !important;
-    color: #f1f5f9 !important;
-}
-
-/* View switch button */
-.view-switch.active {
-    background: white !important;
-    color: #0f172a !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-html.dark .view-switch.active {
-    background: #334155 !important;
-    color: #f1f5f9 !important;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .fc .fc-toolbar {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .fc .fc-toolbar-title {
-        text-align: center;
-    }
-    .fc .fc-header-toolbar > .fc-toolbar-chunk {
-        display: flex;
-        justify-content: center;
-    }
 }
 </style>
 
 <script>
+const allEvents = <?= json_encode($events) ?>;
+let currentFilterStatus = '';
+
 document.addEventListener('DOMContentLoaded', function() {
     const calendarEl = document.getElementById('calendar');
-    const allEvents = <?= json_encode($events) ?>;
-
-    // Restore saved view
-    const savedView = localStorage.getItem('calendar_view') || 'dayGridMonth';
+    const savedView  = localStorage.getItem('plts_cal_view') || 'dayGridMonth';
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: savedView,
         locale: 'id',
         firstDay: 1,
-        height: 750,
-        fixedWeekCount: false,
-        headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: ''
-        },
-        buttonText: {
-            today: 'Hari Ini',
-            month: 'Bulan',
-            week: 'Minggu',
-            list: 'Agenda'
-        },
+        height: 'auto',
+        headerToolbar: false, // Menggunakan custom toolbar modern kita di atas
         events: allEvents,
         editable: true,
-        eventStartEditable: true,
-        eventDurationEditable: true,
+        selectable: true,
         dayMaxEvents: 3,
-        moreLinkText: (n) => `+${n} lagi`,
-        noEventsText: 'Tidak ada jadwal untuk ditampilkan',
+        moreLinkText: (n) => `+${n} jadwal lainnya`,
 
-        // Custom event rendering
+        // Klik atau blok tanggal kosong untuk tambah jadwal cepat
+        select: function(info) {
+            const startStr = info.startStr.split('T')[0];
+            const endDt = new Date(info.end.getTime() - 86400000);
+            const endStr = endDt.toISOString().split('T')[0];
+            openQuickCreateModal(startStr, endStr);
+            calendar.unselect();
+        },
+
+        // Tampilan pill event yang bersih dan rapi
         eventContent: function(arg) {
-            const props = arg.event.extendedProps;
-            const progres = props.progres || 0;
-            const pelanggan = props.pelanggan || '';
-
-            const html = `
-                <div class="event-custom">
-                    <div class="event-custom-top">
-                        <i class="bi ${props.statusIcon || 'bi-calendar'}" style="font-size: 0.7rem;"></i>
-                        <span class="event-custom-title">${arg.event.title}</span>
-                        <span style="font-size: 0.65rem; opacity: 0.8;">${progres}%</span>
+            const p = arg.event.extendedProps;
+            return {
+                html: `
+                    <div class="flex items-center justify-between gap-1.5 overflow-hidden">
+                        <span class="truncate font-bold">${arg.event.title}</span>
+                        <span class="text-[10px] opacity-75 flex-shrink-0">${p.durasi_hari}h</span>
                     </div>
-                    ${pelanggan ? `<div class="event-custom-pelanggan"><i class="bi bi-person-fill" style="font-size: 0.6rem;"></i> ${pelanggan}</div>` : ''}
-                    <div class="event-custom-progress">
-                        <div class="event-custom-progress-bar" style="width: ${progres}%"></div>
-                    </div>
-                </div>
-            `;
-            return { html: html };
+                `
+            };
         },
 
         eventClick: function(info) {
             showEventModal(info.event);
         },
 
+        // Drag & Drop Reschedule
         eventDrop: function(info) {
-            const newStart = info.event.start.toISOString().split('T')[0];
-            const newEnd = info.event.end
-                ? new Date(info.event.end.getTime() - 86400000).toISOString().split('T')[0]
-                : newStart;
-
-            if (!confirm(`Reschedule "${info.event.title}"?\nMulai: ${newStart}\nSelesai: ${newEnd}`)) {
-                info.revert();
-                return;
-            }
-
-            fetch('<?= BASE_URL ?>/api/jadwal/reschedule.php', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: new URLSearchParams({
-                    id: info.event.id,
-                    tanggal_mulai: newStart,
-                    tanggal_selesai: newEnd
-                })
-            }).then(r => r.json()).then(data => {
-                if (!data.success) {
-                    Toast?.show('Gagal reschedule: ' + (data.message || 'Unknown error'), 'error');
-                    info.revert();
-                } else {
-                    Toast?.show('Jadwal berhasil direschedule', 'success');
-                }
-            }).catch(() => {
-                Toast?.show('Terjadi kesalahan', 'error');
-                info.revert();
-            });
+            handleReschedule(info);
+        },
+        eventResize: function(info) {
+            handleReschedule(info);
         },
 
-        datesSet: function() {
-            // Save current view
-            localStorage.setItem('calendar_view', calendar.view.type);
-            updateViewButtons(calendar.view.type);
+        datesSet: function(info) {
+            document.getElementById('calendarTitleLabel').textContent = info.view.title;
+            localStorage.setItem('plts_cal_view', info.view.type);
+            updateViewSwitcherUI(info.view.type);
         }
     });
 
     calendar.render();
+    window.pltsCalendar = calendar;
 
-    // ====== VIEW SWITCHER ======
+    // View Switcher (Bulan / Minggu / Agenda)
     document.querySelectorAll('.view-switch').forEach(btn => {
         btn.addEventListener('click', () => {
-            const view = btn.dataset.view;
-            calendar.changeView(view);
-            localStorage.setItem('calendar_view', view);
-            updateViewButtons(view);
+            calendar.changeView(btn.dataset.view);
         });
     });
 
-    function updateViewButtons(currentView) {
-        document.querySelectorAll('.view-switch').forEach(b => {
-            b.classList.toggle('active', b.dataset.view === currentView);
-        });
-    }
-    updateViewButtons(savedView);
-
-    // ====== STATUS FILTER ======
-    let currentFilter = '';
-    document.querySelectorAll('.status-filter').forEach(btn => {
-        btn.addEventListener('click', () => {
-            currentFilter = btn.dataset.filterStatus;
-            document.querySelectorAll('.status-filter').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            applyFilters();
-        });
-    });
-    document.querySelector('.status-filter[data-filter-status=""]').classList.add('active');
-
-    // ====== SEARCH ======
-    const searchInput = document.getElementById('calendarSearch');
-    let searchTimer;
-    searchInput.addEventListener('input', () => {
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(applyFilters, 300);
-    });
-
-    function applyFilters() {
-        const search = searchInput.value.toLowerCase().trim();
-        const filtered = allEvents.filter(ev => {
-            const matchStatus = !currentFilter || ev.status === currentFilter;
-            const matchSearch = !search ||
-                ev.title.toLowerCase().includes(search) ||
-                (ev.extendedProps.pelanggan || '').toLowerCase().includes(search);
-            return matchStatus && matchSearch;
-        });
-        calendar.removeAllEvents();
-        calendar.addEventSource(filtered);
-    }
-
-    // ====== KEYBOARD SHORTCUTS ======
-    document.addEventListener('keydown', e => {
-        // Skip if typing in input
-        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
-        // Skip if modal open
-        if (!document.getElementById('modalEvent').classList.contains('hidden')) {
-            if (e.key === 'Escape') closeEventModal();
-            return;
-        }
-
-        switch(e.key.toLowerCase()) {
-            case 't':
-                calendar.today();
-                Toast?.show('Kembali ke hari ini', 'info');
-                break;
-            case 'm':
-                calendar.changeView('dayGridMonth');
-                break;
-            case 'w':
-                calendar.changeView('timeGridWeek');
-                break;
-            case 'l':
-                calendar.changeView('listWeek');
-                break;
-            case 'n':
-                window.location = '<?= BASE_URL ?>/pages/jadwal/create.php';
-                break;
-            case 'arrowleft':
-                calendar.prev();
-                break;
-            case 'arrowright':
-                calendar.next();
-                break;
-        }
-    });
-
-    // Store calendar reference globally for shortcuts
-    window.pltsCalendar = calendar;
+    // Live Search
+    document.getElementById('calendarSearch').addEventListener('input', applyAllFilters);
 });
 
-// ====== MODAL FUNCTIONS ======
+function handleReschedule(info) {
+    const newStart = info.event.start.toISOString().split('T')[0];
+    const newEnd = info.event.end
+        ? new Date(info.event.end.getTime() - 86400000).toISOString().split('T')[0]
+        : newStart;
+
+    fetch('<?= BASE_URL ?>/api/jadwal/reschedule.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({
+            id: info.event.id,
+            tanggal_mulai: newStart,
+            tanggal_selesai: newEnd
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) {
+            Toast?.show(data.message || 'Gagal mengubah jadwal', 'error');
+            info.revert();
+        } else {
+            Toast?.show(`Jadwal "${info.event.title}" diperbarui ke ${newStart} s/d ${newEnd}`, 'success');
+        }
+    })
+    .catch(() => {
+        Toast?.show('Koneksi gagal saat mengubah jadwal', 'error');
+        info.revert();
+    });
+}
+
+function updateViewSwitcherUI(activeView) {
+    document.querySelectorAll('.view-switch').forEach(b => {
+        const isActive = b.dataset.view === activeView;
+        b.className = isActive
+            ? 'view-switch px-3 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-slate-900 shadow-2xs'
+            : 'view-switch px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900';
+    });
+}
+
+function switchMainMode(mode) {
+    const isCal = mode === 'calendar';
+    document.getElementById('sectionCalendarView').classList.toggle('hidden', !isCal);
+    document.getElementById('calendarCustomNav').classList.toggle('hidden', !isCal);
+    document.getElementById('sectionTableView').classList.toggle('hidden', isCal);
+
+    document.getElementById('btnModeCalendar').className = isCal
+        ? 'px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-slate-900 shadow-xs flex items-center gap-1.5'
+        : 'px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 flex items-center gap-1.5';
+    document.getElementById('btnModeTable').className = !isCal
+        ? 'px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-slate-900 shadow-xs flex items-center gap-1.5'
+        : 'px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 flex items-center gap-1.5';
+
+    if (isCal) window.pltsCalendar?.updateSize();
+}
+
+function triggerStatusFilter(statusKey) {
+    currentFilterStatus = statusKey;
+    document.querySelectorAll('.stat-filter-card').forEach(card => {
+        card.classList.toggle('ring-2', card.dataset.statCard === statusKey);
+        card.classList.toggle('ring-primary-500', card.dataset.statCard === statusKey);
+    });
+    applyAllFilters();
+}
+
+function applyAllFilters() {
+    const q = document.getElementById('calendarSearch').value.toLowerCase().trim();
+
+    // Filter Kalender
+    const filteredEvents = allEvents.filter(ev => {
+        const matchStatus = !currentFilterStatus || ev.status === currentFilterStatus;
+        const matchSearch = !q ||
+            ev.title.toLowerCase().includes(q) ||
+            (ev.extendedProps.pelanggan || '').toLowerCase().includes(q) ||
+            (ev.extendedProps.keterangan || '').toLowerCase().includes(q);
+        return matchStatus && matchSearch;
+    });
+    window.pltsCalendar.removeAllEvents();
+    window.pltsCalendar.addEventSource(filteredEvents);
+
+    // Filter Tabel Daftar Jadwal
+    document.querySelectorAll('.jadwal-row-item').forEach(row => {
+        const matchStatus = !currentFilterStatus || row.dataset.status === currentFilterStatus;
+        const matchSearch = !q || row.dataset.search.includes(q);
+        row.classList.toggle('hidden', !(matchStatus && matchSearch));
+    });
+}
+
+// Modal Detail & Quick-Edit
 function showEventModal(event) {
-    const props = event.extendedProps;
-    const color = props.statusColor || '#6366f1';
-
+    const p = event.extendedProps;
     document.getElementById('eventTitle').textContent = event.title;
-    document.getElementById('eventStatus').textContent = props.statusLabel || props.status;
-    document.getElementById('eventIcon').className = 'bi ' + (props.statusIcon || 'bi-calendar-event') + ' text-xl';
-    document.getElementById('eventPelanggan').textContent = props.pelanggan || '-';
-    document.getElementById('eventKeterangan').textContent = props.keterangan || '-';
-    document.getElementById('eventDurasi').textContent = (props.durasi_hari || 0) + ' hari';
+    document.getElementById('eventStatus').textContent = p.statusLabel;
+    document.getElementById('eventStatus').style.color = p.statusColor;
+    document.getElementById('eventPelanggan').textContent = p.pelanggan;
+    document.getElementById('eventKeterangan').textContent = p.keterangan;
+    document.getElementById('eventPeriode').textContent = `${p.tanggal_mulai} s/d ${p.tanggal_selesai} (${p.durasi_hari} hari)`;
 
-    const start = event.start.toISOString().split('T')[0];
-    const end = event.end ? new Date(event.end.getTime() - 86400000).toISOString().split('T')[0] : start;
-    document.getElementById('eventPeriode').textContent = `${formatTgl(start)} — ${formatTgl(end)}`;
+    document.getElementById('eventProgresLabel').textContent = p.progres + '%';
+    document.getElementById('eventProgresBar').style.width = p.progres + '%';
 
-    // Progress
-    const progres = props.progres || 0;
-    document.getElementById('eventProgresLabel').textContent = progres + '%';
-    document.getElementById('eventProgresBar').style.width = progres + '%';
+    // Isi form Quick Update Status
+    document.getElementById('quickEditId').value = event.id;
+    document.getElementById('quickEditProyekId').value = p.proyek_id;
+    document.getElementById('quickEditMulai').value = p.tanggal_mulai;
+    document.getElementById('quickEditSelesai').value = p.tanggal_selesai;
+    document.getElementById('quickEditKeterangan').value = p.keteranganRaw;
+    document.getElementById('quickEditStatus').value = p.status;
 
-    // Links
-    document.getElementById('eventProyekLink').href = '<?= BASE_URL ?>/pages/proyek/show.php?id=' + props.proyek_id;
+    document.getElementById('deleteJadwalId').value = event.id;
+    document.getElementById('eventProyekLink').href = '<?= BASE_URL ?>/pages/proyek/show.php?id=' + p.proyek_id;
     document.getElementById('eventEditLink').href = '<?= BASE_URL ?>/pages/jadwal/edit.php?id=' + event.id;
 
-    // Dynamic gradient
-    document.getElementById('eventHeader').style.background = `linear-gradient(135deg, ${color}, ${adjustColor(color, -30)})`;
-
-    // Show modal
-    document.getElementById('modalEvent').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
+    const modal = document.getElementById('modalEvent');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
 }
 
 function closeEventModal() {
-    document.getElementById('modalEvent').classList.add('hidden');
-    document.body.style.overflow = '';
+    const modal = document.getElementById('modalEvent');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
 }
 
-function formatTgl(tgl) {
-    const bulan = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-    const d = new Date(tgl);
-    return `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`;
+// Modal Quick-Create
+function openQuickCreateModal(startDate, endDate) {
+    document.getElementById('qcTanggalMulai').value = startDate;
+    document.getElementById('qcTanggalSelesai').value = endDate || startDate;
+    const modal = document.getElementById('modalQuickCreate');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
 }
 
-// Adjust color brightness
-function adjustColor(hex, percent) {
-    const num = parseInt(hex.replace('#', ''), 16);
-    const amt = Math.round(2.55 * percent);
-    const R = Math.max(0, Math.min(255, (num >> 16) + amt));
-    const G = Math.max(0, Math.min(255, (num >> 8 & 0x00FF) + amt));
-    const B = Math.max(0, Math.min(255, (num & 0x0000FF) + amt));
-    return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+function closeQuickCreateModal() {
+    const modal = document.getElementById('modalQuickCreate');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
 }
 </script>
 
