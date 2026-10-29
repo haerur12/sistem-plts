@@ -283,12 +283,13 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 $l = $t['data'];
                                 $roleColor = $roleColors[$l['role']] ?? 'from-slate-500 to-slate-600';
                                 $inisial = strtoupper(substr($l['nama_teknisi'], 0, 1));
+                                $statusLaporan = $l['status_pengerjaan'] ?? $t['status'] ?? 'belum_mulai';
                                 $statusColor = [
                                     'belum_mulai'  => 'bg-slate-400',
                                     'dalam_proses' => 'bg-blue-500',
                                     'selesai'      => 'bg-emerald-500',
                                     'terkendala'   => 'bg-red-500',
-                                ][$l['status']] ?? 'bg-slate-400';
+                                ][$statusLaporan] ?? 'bg-slate-400';
                             ?>
                             <div class="relative flex gap-4">
                                 <!-- Dot -->
@@ -327,10 +328,14 @@ include __DIR__ . '/../../includes/sidebar.php';
                                     
                                     <?php if (!empty($l['fotos'])): ?>
                                     <div class="flex gap-1.5 flex-wrap">
-                                        <?php foreach ($l['fotos'] as $f): ?>
-                                        <a href="<?= BASE_URL ?>/uploads/<?= $f['path_file'] ?>" target="_blank" 
+                                        <?php foreach ($l['fotos'] as $f): 
+                                            $fotoUrl = (str_starts_with($f['path_file'], 'assets/') || str_starts_with($f['path_file'], 'uploads/')) 
+                                                ? BASE_URL . '/' . ltrim($f['path_file'], '/') 
+                                                : BASE_URL . '/uploads/' . ltrim($f['path_file'], '/');
+                                        ?>
+                                        <a href="<?= $fotoUrl ?>" target="_blank" 
                                             class="group relative">
-                                            <img src="<?= BASE_URL ?>/uploads/<?= $f['path_file'] ?>" 
+                                            <img src="<?= $fotoUrl ?>" 
                                                 class="w-16 h-16 object-cover rounded-lg border border-slate-200 group-hover:border-primary-400 transition-colors">
                                             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 rounded-lg transition-colors flex items-center justify-center">
                                                 <i class="bi bi-zoom-in text-white opacity-0 group-hover:opacity-100 transition-opacity"></i>

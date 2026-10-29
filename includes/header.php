@@ -39,14 +39,11 @@ $flash       = getFlash();
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-<!-- Bootstrap CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-
-<!-- Bootstrap Icons -->
+<!-- Bootstrap Icons (Tanpa Bootstrap CSS agar tidak bentrok dengan Tailwind) -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
 <!-- Custom CSS -->
-<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css?v=5">
+<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css?v=6">
 
 <script>
 tailwind.config = {
@@ -58,16 +55,16 @@ tailwind.config = {
             },
             colors: {
                 primary: {
-                    50:  '#ecfeff',
-                    100: '#cffafe',
-                    200: '#a5f3fc',
-                    300: '#67e8f9',
-                    400: '#22d3ee',
-                    500: '#06b6d4',
-                    600: '#0891b2',
-                    700: '#0e7490',
-                    800: '#155e75',
-                    900: '#0C4A8C',
+                    50:  '#eef2ff',
+                    100: '#e0e7ff',
+                    200: '#c7d2fe',
+                    300: '#a5b4fc',
+                    400: '#818cf8',
+                    500: '#6366f1',
+                    600: '#4f46e5',
+                    700: '#4338ca',
+                    800: '#3730a3',
+                    900: '#1e1b4b',
                 },
                 accent: {
                     DEFAULT: '#2DD4BF',
@@ -76,7 +73,7 @@ tailwind.config = {
                 },
             },
             boxShadow: {
-                'card': '0 1px 3px rgba(12, 74, 140, .06), 0 1px 2px rgba(12, 74, 140, .04)',
+                'card': '0 1px 3px rgba(15, 23, 42, .06), 0 1px 2px rgba(15, 23, 42, .04)',
                 'card-hover': '0 10px 15px -3px rgba(15,23,42,.08), 0 4px 6px -4px rgba(15,23,42,.04)',
             },
             borderRadius: {
@@ -123,6 +120,7 @@ main {
     top: calc(100% + 8px);
     left: 0;
     right: 0;
+    min-width: 320px;
     background: white;
     border: 1px solid var(--slate-200);
     border-radius: 16px;
@@ -138,5 +136,5 @@ html.dark #searchDropdown {
 }
 </style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased" <?= $flash ? 'data-flash-type="'.htmlspecialchars($flash['type']).'" data-flash-msg="'.htmlspecialchars($flash['message']).'"' : '' ?>>
+<body id="flashData" class="bg-slate-50 text-slate-800 antialiased" <?= $flash ? 'data-flash-type="'.htmlspecialchars($flash['type']).'" data-flash-msg="'.htmlspecialchars($flash['message']).'"' : '' ?>>
 <div class="flex h-screen overflow-hidden">

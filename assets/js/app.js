@@ -279,12 +279,11 @@ function pollNotifikasi() {
             if (!data.authenticated) return;
             const count = parseInt(data.count) || 0;
             const dot = document.getElementById('notifDot');
-            const badge = document.getElementById('notifBadge');
             if (dot) dot.classList.toggle('hidden', count === 0);
-            if (badge) {
+            document.querySelectorAll('#notifBadge, #sidebarNotifBadge, .notif-badge').forEach(badge => {
                 badge.classList.toggle('hidden', count === 0);
                 badge.textContent = count > 9 ? '9+' : count;
-            }
+            });
         })
         .catch(() => { });
 }

@@ -78,11 +78,9 @@ $inisial   = strtoupper(substr($user['nama'] ?? 'U', 0, 1));
             class="sidebar-link <?= $currentPage === 'notifikasi' ? 'active' : '' ?>">
             <i class="bi bi-bell w-5 text-center"></i>
             <span>Notifikasi</span>
-            <?php if ($notifCount > 0): ?>
-            <span class="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center">
+            <span id="sidebarNotifBadge" class="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center notif-badge <?= $notifCount > 0 ? '' : 'hidden' ?>">
                 <?= $notifCount > 9 ? '9+' : $notifCount ?>
             </span>
-            <?php endif; ?>
         </a>
 
         <a href="<?= BASE_URL ?>/pages/komponen/status.php"
@@ -195,7 +193,7 @@ $inisial   = strtoupper(substr($user['nama'] ?? 'U', 0, 1));
     <div id="sidebarOverlay" onclick="closeSidebar()"></div>
 
     <!-- Topbar -->
-    <header class="bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-4 lg:px-6 py-3.5 flex items-center justify-between flex-shrink-0 sticky top-0 z-10">
+    <header class="topbar bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-4 lg:px-6 py-3.5 flex items-center justify-between flex-shrink-0 sticky top-0 z-20">
         <div class="flex items-center gap-3">
             <!-- Hamburger mobile -->
             <button onclick="openSidebar()" class="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors">
@@ -205,40 +203,76 @@ $inisial   = strtoupper(substr($user['nama'] ?? 'U', 0, 1));
         </div>
 
         <div class="flex items-center gap-2">
-            <!-- Search Global -->
+            <!-- Search Global (Ctrl+K) -->
             <div class="relative hidden md:block" id="searchContainer">
                 <div class="relative">
                     <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
                     <input type="text" id="globalSearch"
-                        placeholder="Cari proyek, pelanggan..."
-                        class="w-56 pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all focus:w-72"
+                        placeholder="Cari proyek, laporan, stok..."
+                        class="w-64 pl-9 pr-14 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all focus:w-80"
                         autocomplete="off">
+                    <kbd class="absolute right-2.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 bg-white border border-slate-200 rounded-md pointer-events-none">
+                        Ctrl+K
+                    </kbd>
                 </div>
                 <div id="searchDropdown" class="hidden"></div>
             </div>
 
-            <!-- Notifikasi -->
+            <!-- Dark Mode Toggle (Terhubung ke DarkMode.toggle() di app.js) -->
+            <button type="button" onclick="DarkMode.toggle()"
+                class="p-2 rounded-xl hover:bg-slate-100 text-slate-500 transition-colors"
+                title="Ubah Tema (Light / Dark Mode)">
+                <i id="darkIcon" class="bi bi-moon text-base"></i>
+            </button>
+
+            <!-- Notifikasi (Terhubung ke pollNotifikasi() di app.js) -->
             <a href="<?= BASE_URL ?>/pages/notifikasi/index.php"
-                class="relative p-2 rounded-lg hover:bg-slate-100 transition-colors">
+                class="relative p-2 rounded-xl hover:bg-slate-100 transition-colors"
+                title="Notifikasi (Alt+N)">
                 <i class="bi bi-bell text-slate-500 text-lg"></i>
-                <?php if ($notifCount > 0): ?>
-                <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" id="notifDot"></span>
-                <?php endif; ?>
+                <span id="notifDot" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white <?= $notifCount > 0 ? '' : 'hidden' ?>"></span>
             </a>
 
             <div class="w-px h-6 bg-slate-200 mx-1"></div>
 
-            <!-- User -->
-            <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-br <?= $roleColor ?> flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-sm">
-                    <?= strtoupper(substr($user['nama'] ?? 'U', 0, 1)) ?>
+            <!-- User Dropdown Menu (Terhubung ke toggleUserMenu() di app.js) -->
+            <div class="relative" id="userMenu">
+                <button type="button" onclick="toggleUserMenu()"
+                    class="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-slate-100 transition-colors">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br <?= $roleColor ?> flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-sm">
+                        <?= strtoupper(substr($user['nama'] ?? 'U', 0, 1)) ?>
+                    </div>
+                    <div class="hidden sm:block text-left">
+                        <div class="text-xs font-bold text-slate-700 leading-tight"><?= sanitize($user['nama'] ?? '') ?></div>
+                        <div class="text-[10px] text-slate-400 leading-tight"><?= $roleLabel ?></div>
+                    </div>
+                    <i class="bi bi-chevron-down text-xs text-slate-400 hidden sm:block"></i>
+                </button>
+
+                <!-- Dropdown Box -->
+                <div id="userDropdown" class="hidden absolute right-0 mt-2 w-52 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-50">
+                    <div class="px-4 py-2.5 border-b border-slate-100">
+                        <p class="text-xs font-bold text-slate-800 truncate"><?= sanitize($user['nama'] ?? '') ?></p>
+                        <p class="text-[11px] text-slate-400 truncate"><?= sanitize($user['email'] ?? '') ?></p>
+                    </div>
+                    <a href="<?= BASE_URL ?>/pages/notifikasi/index.php" class="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50">
+                        <i class="bi bi-bell text-slate-400"></i> Notifikasi
+                        <span id="notifBadge" class="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 <?= $notifCount > 0 ? '' : 'hidden' ?>">
+                            <?= $notifCount > 9 ? '9+' : $notifCount ?>
+                        </span>
+                    </a>
+                    <div class="border-t border-slate-100 my-1"></div>
+                    <form method="POST" action="<?= BASE_URL ?>/api/auth/logout.php">
+                        <button type="submit" class="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 text-left">
+                            <i class="bi bi-box-arrow-right"></i> Keluar (Logout)
+                        </button>
+                    </form>
                 </div>
-                <span class="text-sm font-semibold text-slate-700 hidden sm:block"><?= sanitize($user['nama'] ?? '') ?></span>
             </div>
         </div>
     </header>
 
-    <!-- Flash Message -->
+    <!-- Flash Message Banner -->
     <?php if ($flash): ?>
     <?php $flashStyle = $flash['type'] === 'success'
         ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
