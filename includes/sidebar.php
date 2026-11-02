@@ -169,7 +169,7 @@ $inisial   = strtoupper(substr($user['nama'] ?? 'U', 0, 1));
         <!-- Akun -->
         <p class="px-3 pt-5 pb-2 text-[10px] font-bold uppercase tracking-widest sidebar-section">Akun</p>
         <a href="<?= BASE_URL ?>/pages/profil/index.php"
-            class="sidebar-link <?= $currentPage === 'profil' ? 'active' : '' ?>">
+            class="sidebar-link <?= ($currentPage === 'profil' || $currentPage === 'profile') ? 'active' : '' ?>">
             <i class="bi bi-person-circle w-5 text-center"></i>
             <span>Profil Saya</span>
         </a>
@@ -255,6 +255,9 @@ $inisial   = strtoupper(substr($user['nama'] ?? 'U', 0, 1));
                         <p class="text-xs font-bold text-slate-800 truncate"><?= sanitize($user['nama'] ?? '') ?></p>
                         <p class="text-[11px] text-slate-400 truncate"><?= sanitize($user['email'] ?? '') ?></p>
                     </div>
+                    <a href="<?= BASE_URL ?>/pages/profile/index.php" class="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50">
+                        <i class="bi bi-person text-slate-400"></i> Profil Saya
+                    </a>
                     <a href="<?= BASE_URL ?>/pages/notifikasi/index.php" class="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50">
                         <i class="bi bi-bell text-slate-400"></i> Notifikasi
                         <span id="notifBadge" class="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 <?= $notifCount > 0 ? '' : 'hidden' ?>">
