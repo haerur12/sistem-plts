@@ -71,25 +71,42 @@ function onProyekChange() {
 
 function cekLaporanTerakhirProyek(proyekId) {
     const btnLoadLast = document.getElementById('btnLoadLastPlan');
-    if (!btnLoadLast) return;
-
     const baseUrl = document.querySelector('meta[name="base-url"]')?.content || '';
+
     fetch(`${baseUrl}/api/laporan/last-plan.php?proyek_id=${encodeURIComponent(proyekId)}`)
         .then(r => r.json())
         .then(data => {
-            if (data.found && data.items && data.items.length > 0) {
-                lastPlanCache = data;
-                btnLoadLast.classList.remove('hidden');
-                btnLoadLast.classList.add('inline-flex');
-                btnLoadLast.title = `Muat ${data.items.length} poin dari laporan tanggal ${data.tanggal_laporan}`;
-            } else {
-                lastPlanCache = null;
-                btnLoadLast.classList.add('hidden');
-                btnLoadLast.classList.remove('inline-flex');
+            // 1. Otomatis isi angka Manpower jika proyek memiliki tim yang ditempatkan di proyek_tim
+            if (data.team_manpower) {
+                const mp = data.team_manpower;
+                const mapId = {
+                    pm: 'mp_pm', sm: 'mp_sm', pengawas: 'mp_pengawas', admin: 'mp_admin',
+                    hse: 'mp_hse', scaffolder: 'mp_scaffolder', teknisi: 'mp_teknisi', helper: 'mp_helper'
+                };
+                Object.keys(mapId).forEach(k => {
+                    if (mp[k] !== undefined && document.getElementById(mapId[k])) {
+                        document.getElementById(mapId[k]).value = mp[k];
+                    }
+                });
+                hitungManpower();
+            }
+
+            // 2. Tampilkan tombol Muat Next Plan Kemarin jika ada item dari laporan sebelumnya
+            if (btnLoadLast) {
+                if (data.found && data.items && data.items.length > 0) {
+                    lastPlanCache = data;
+                    btnLoadLast.classList.remove('hidden');
+                    btnLoadLast.classList.add('inline-flex');
+                    btnLoadLast.title = `Muat ${data.items.length} poin dari laporan tanggal ${data.tanggal_laporan}`;
+                } else {
+                    lastPlanCache = null;
+                    btnLoadLast.classList.add('hidden');
+                    btnLoadLast.classList.remove('inline-flex');
+                }
             }
         })
         .catch(() => {
-            btnLoadLast.classList.add('hidden');
+            if (btnLoadLast) btnLoadLast.classList.add('hidden');
         });
 }
 
