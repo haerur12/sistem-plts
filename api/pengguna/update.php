@@ -29,6 +29,9 @@ if (!$id || $nama === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
 }
 
 $db = db();
+try {
+    $db->exec("ALTER TABLE users MODIFY COLUMN role ENUM('operator','admin','manajer_proyek','teknisi_lapangan','gudang') NOT NULL DEFAULT 'teknisi_lapangan'");
+} catch (Exception $e) {}
 
 // Pastikan email tidak dipakai user lain
 $cek = $db->prepare("SELECT COUNT(*) FROM users WHERE LOWER(email) = ? AND id != ?");

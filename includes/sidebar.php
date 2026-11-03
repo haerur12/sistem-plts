@@ -2,12 +2,14 @@
 // includes/sidebar.php
 $currentPage = $currentPage ?? '';
 $roleColors = [
+    'operator'         => 'from-amber-500 to-orange-600',
     'admin'            => 'from-rose-500 to-red-600',
     'manajer_proyek'   => 'from-sky-500 to-blue-600',
     'teknisi_lapangan' => 'from-emerald-500 to-green-600',
     'gudang'           => 'from-violet-500 to-purple-600',
 ];
 $roleLabels = [
+    'operator'         => 'Operator Sistem',
     'admin'            => 'Admin',
     'manajer_proyek'   => 'Manajer Proyek',
     'teknisi_lapangan' => 'Teknisi Lapangan',
@@ -49,6 +51,17 @@ $inisial   = strtoupper(substr($user['nama'] ?? 'U', 0, 1));
 
     <!-- Navigation -->
     <nav class="flex-1 px-3 py-4 space-y-1">
+        <?php if (isOperator() || isRole('admin')): ?>
+        <!-- Panel Operator -->
+        <p class="px-3 pt-2 pb-2 text-[10px] font-bold uppercase tracking-widest text-amber-300/90">Panel Operator</p>
+
+        <a href="<?= BASE_URL ?>/pages/operator/akses.php"
+            class="sidebar-link <?= $currentPage === 'operator-akses' ? 'active' : '' ?>">
+            <i class="bi bi-shield-shaded w-5 text-center text-amber-400"></i>
+            <span>Kontrol & Hak Akses</span>
+        </a>
+        <?php endif; ?>
+
         <!-- Menu Utama -->
         <p class="px-3 pt-2 pb-2 text-[10px] font-bold uppercase tracking-widest sidebar-section">Menu Utama</p>
 

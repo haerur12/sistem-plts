@@ -39,7 +39,7 @@ $stmt = $db->prepare("
            (SELECT COUNT(*) FROM laporan_lapangan l WHERE l.user_id = u.id) AS total_laporan
     FROM users u
     WHERE $whereStr
-    ORDER BY FIELD(u.role, 'admin', 'manajer_proyek', 'teknisi_lapangan', 'gudang'), u.nama ASC
+    ORDER BY FIELD(u.role, 'operator', 'admin', 'manajer_proyek', 'teknisi_lapangan', 'gudang'), u.nama ASC
 ");
 $stmt->execute($params);
 $users = $stmt->fetchAll();
@@ -55,6 +55,7 @@ $summary = $db->query("
 ")->fetch();
 
 $roleMeta = [
+    'operator'         => ['label' => 'Operator Sistem',  'icon' => 'bi-shield-shaded',    'cls' => 'bg-amber-50 text-amber-700 ring-amber-200',     'avatar' => 'from-amber-500 to-orange-600'],
     'admin'            => ['label' => 'Administrator',    'icon' => 'bi-shield-lock-fill', 'cls' => 'bg-rose-50 text-rose-700 ring-rose-200',       'avatar' => 'from-rose-500 to-red-600'],
     'manajer_proyek'   => ['label' => 'Manajer Proyek',   'icon' => 'bi-briefcase-fill',   'cls' => 'bg-sky-50 text-sky-700 ring-sky-200',         'avatar' => 'from-sky-500 to-blue-600'],
     'teknisi_lapangan' => ['label' => 'Teknisi Lapangan', 'icon' => 'bi-tools',            'cls' => 'bg-emerald-50 text-emerald-700 ring-emerald-200','avatar' => 'from-emerald-500 to-green-600'],

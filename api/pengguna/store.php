@@ -27,7 +27,7 @@ if ($nama === '' || $email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL))
     redirect(BASE_URL . '/pages/pengguna/create.php');
 }
 
-$validRoles = ['admin', 'manajer_proyek', 'teknisi_lapangan', 'gudang'];
+$validRoles = ['operator', 'admin', 'manajer_proyek', 'teknisi_lapangan', 'gudang'];
 if (!in_array($role, $validRoles, true)) {
     setFlash('error', 'Role jabatan tidak valid.');
     redirect(BASE_URL . '/pages/pengguna/create.php');
@@ -42,6 +42,9 @@ if ($isAutoPass) {
 }
 
 $db = db();
+try {
+    $db->exec("ALTER TABLE users MODIFY COLUMN role ENUM('operator','admin','manajer_proyek','teknisi_lapangan','gudang') NOT NULL DEFAULT 'teknisi_lapangan'");
+} catch (Exception $e) {}
 $cek = $db->prepare("SELECT COUNT(*) FROM users WHERE LOWER(email) = ?");
 $cek->execute([$email]);
 if ($cek->fetchColumn() > 0) {

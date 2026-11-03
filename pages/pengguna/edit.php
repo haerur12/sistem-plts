@@ -24,6 +24,7 @@ $roleOptions = [
     'manajer_proyek'   => ['label' => 'Manajer Proyek',   'icon' => 'bi-briefcase-fill',   'desc' => 'Kelola proyek, jadwal, & evaluasi laporan'],
     'gudang'           => ['label' => 'Staf Gudang',      'icon' => 'bi-box-seam-fill',    'desc' => 'Kelola stok komponen & material proyek'],
     'admin'            => ['label' => 'Administrator',    'icon' => 'bi-shield-lock-fill', 'desc' => 'Akses penuh seluruh fitur & data master'],
+    'operator'         => ['label' => 'Operator Sistem',  'icon' => 'bi-shield-shaded',    'desc' => 'Pantau seluruh akses & atur matriks fitur tiap role'],
 ];
 
 include __DIR__ . '/../../includes/header.php';
