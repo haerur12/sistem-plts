@@ -1,211 +1,208 @@
 <?php
-// pages/proyek/kanban.php — KANBAN BOARD
-$pageTitle   = 'Kanban Board';
+// pages/proyek/kanban.php — KANBAN BOARD INTERAKTIF + AVATAR TIM PROYEK
+$pageTitle   = 'Kanban Board Proyek';
 $currentPage = 'kanban';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/auth.php';
-requireRole(['admin','manajer_proyek']);
+requireRole(['admin', 'manajer_proyek']);
 
 $db = db();
-
-// Ambil semua proyek
 $proyeks = $db->query("
-    SELECT p.*, pl.nama_pelanggan,
-    (SELECT COUNT(*) FROM laporan_lapangan WHERE proyek_id = p.id) as total_laporan
+    SELECT p.*, pl.nama_pelanggan
     FROM proyek p
     JOIN pelanggan pl ON p.pelanggan_id = pl.id
     ORDER BY p.created_at DESC
 ")->fetchAll();
 
-// Kelompokkan per status
-$statuses = [
-    'survei'      => ['label' => 'Survei',       'color' => '#94a3b8', 'bg' => 'bg-slate-50',    'icon' => 'bi-search'],
-    'perencanaan' => ['label' => 'Perencanaan',  'color' => '#38bdf8', 'bg' => 'bg-sky-50',      'icon' => 'bi-clipboard-data'],
-    'instalasi'   => ['label' => 'Instalasi',    'color' => '#6366f1', 'bg' => 'bg-indigo-50',   'icon' => 'bi-tools'],
-    'selesai'     => ['label' => 'Selesai',      'color' => '#10b981', 'bg' => 'bg-emerald-50',  'icon' => 'bi-check-circle'],
-    'ditunda'     => ['label' => 'Ditunda',      'color' => '#f59e0b', 'bg' => 'bg-amber-50',    'icon' => 'bi-pause-circle'],
+// Ambil daftar tim per proyek
+$timPerProyek = [];
+try {
+    $stmtTim = $db->query("SELECT proyek_id, nama_personel, peran_proyek FROM proyek_tim ORDER BY id ASC");
+    foreach ($stmtTim->fetchAll() as $t) {
+        $timPerProyek[(int)$t['proyek_id']][] = $t;
+    }
+} catch (Exception $e) {
+    $timPerProyek = [];
+}
+
+$columns = [
+    'survei'      => ['label' => 'Survei Lokasi', 'color' => 'border-slate-300',   'badge' => 'bg-slate-100 text-slate-700',     'icon' => 'bi-compass'],
+    'perencanaan' => ['label' => 'Perencanaan',   'color' => 'border-sky-400',     'badge' => 'bg-sky-50 text-sky-700',          'icon' => 'bi-vector-pen'],
+    'instalasi'   => ['label' => 'Instalasi',     'color' => 'border-indigo-500',  'badge' => 'bg-indigo-50 text-indigo-700',    'icon' => 'bi-tools'],
+    'selesai'     => ['label' => 'Selesai',       'color' => 'border-emerald-500', 'badge' => 'bg-emerald-50 text-emerald-700',  'icon' => 'bi-check2-circle'],
+    'ditunda'     => ['label' => 'Ditunda',       'color' => 'border-amber-500',   'badge' => 'bg-amber-50 text-amber-700',      'icon' => 'bi-pause-circle'],
 ];
 
-$grouped = [];
-foreach ($statuses as $key => $s) $grouped[$key] = [];
-foreach ($proyeks as $p) $grouped[$p['status']][] = $p;
+$grouped = array_fill_keys(array_keys($columns), []);
+foreach ($proyeks as $p) {
+    if (isset($grouped[$p['status']])) {
+        $grouped[$p['status']][] = $p;
+    }
+}
 
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
 ?>
 
-<div class="flex items-center justify-between mb-5 flex-wrap gap-3">
-    <div>
-        <h2 class="text-lg font-bold text-slate-900 tracking-tight">Kanban Board Proyek</h2>
-        <p class="text-[13px] text-slate-500 mt-1">Drag & drop card untuk update status</p>
-    </div>
-    <div class="flex gap-2">
-        <a href="<?= BASE_URL ?>/pages/proyek/index.php" class="btn-secondary">
-            <i class="bi bi-list-ul"></i> Tampilan Tabel
-        </a>
-        <?php if (isAdmin()): ?>
-        <a href="<?= BASE_URL ?>/pages/proyek/create.php" class="btn-primary">
-            <i class="bi bi-plus-lg"></i> Tambah Proyek
-        </a>
-        <?php endif; ?>
-    </div>
-</div>
-
-<div class="flex gap-4 overflow-x-auto pb-4" id="kanbanBoard">
-    <?php foreach ($statuses as $statusKey => $statusMeta):
-        $items = $grouped[$statusKey];
-    ?>
-    <div class="flex-shrink-0 w-80">
-        <!-- Column Header -->
-        <div class="card mb-3 overflow-hidden">
-            <div class="px-4 py-3 flex items-center justify-between" style="background: <?= $statusMeta['color'] ?>15; border-left: 4px solid <?= $statusMeta['color'] ?>;">
-                <div class="flex items-center gap-2">
-                    <i class="bi <?= $statusMeta['icon'] ?>" style="color: <?= $statusMeta['color'] ?>"></i>
-                    <h3 class="text-sm font-bold text-slate-800"><?= $statusMeta['label'] ?></h3>
-                    <span class="px-2 py-0.5 bg-white rounded-full text-xs font-bold text-slate-600 shadow-sm">
-                        <?= count($items) ?>
-                    </span>
-                </div>
+<div class="max-w-7xl mx-auto">
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
+        <div class="flex items-center gap-3.5">
+            <span class="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary-600 to-indigo-700 text-white flex items-center justify-center shadow-lg shadow-primary-600/25">
+                <i class="bi bi-kanban text-lg"></i>
+            </span>
+            <div>
+                <h2 class="text-xl font-bold text-slate-900 tracking-tight">Kanban Board Proyek PLTS</h2>
+                <p class="text-xs text-slate-500 mt-0.5">Geser kartu proyek (*drag & drop*) antar kolom untuk mengubah tahapan status proyek secara langsung</p>
             </div>
         </div>
+        <div class="flex gap-2">
+            <a href="<?= BASE_URL ?>/pages/proyek/index.php" class="btn-secondary btn-sm">
+                <i class="bi bi-table"></i> Mode Tabel
+            </a>
+            <?php if (isAdmin()): ?>
+            <a href="<?= BASE_URL ?>/pages/proyek/create.php" class="btn-primary btn-sm">
+                <i class="bi bi-plus-lg"></i> Tambah Proyek
+            </a>
+            <?php endif; ?>
+        </div>
+    </div>
 
-        <!-- Drop Zone -->
-        <div class="kanban-column space-y-3 min-h-[200px] p-2 rounded-xl transition-colors"
-            data-status="<?= $statusKey ?>"
-            ondragover="handleDragOver(event)"
-            ondragleave="handleDragLeave(event)"
-            ondrop="handleDrop(event, '<?= $statusKey ?>')">
-            
-            <?php if (empty($items)): ?>
-            <div class="text-center py-8 text-slate-400 text-xs border-2 border-dashed border-slate-200 rounded-xl">
-                <i class="bi bi-inbox text-2xl block mb-2"></i>
-                Tidak ada proyek
+    <!-- Papan Kanban 5 Kolom -->
+    <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4 items-start">
+        <?php foreach ($columns as $statusKey => $col):
+            $items = $grouped[$statusKey];
+        ?>
+        <div class="bg-slate-100/80 border border-slate-200/80 rounded-2xl p-3 flex flex-col max-h-[78vh]">
+            <!-- Header Kolom -->
+            <div class="flex items-center justify-between px-2 py-1.5 mb-2.5 border-t-4 <?= $col['color'] ?> rounded-t-sm">
+                <div class="flex items-center gap-2">
+                    <i class="bi <?= $col['icon'] ?> text-slate-600 text-sm"></i>
+                    <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-800"><?= $col['label'] ?></h3>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold <?= $col['badge'] ?>" id="count_<?= $statusKey ?>">
+                    <?= count($items) ?>
+                </span>
             </div>
-            <?php else: ?>
-                <?php foreach ($items as $p): ?>
-                <div class="kanban-card card card-hover p-4 cursor-grab active:cursor-grabbing"
-                    draggable="true"
-                    data-id="<?= $p['id'] ?>"
-                    ondragstart="handleDragStart(event, <?= $p['id'] ?>)">
-                    
-                    <div class="flex items-start justify-between gap-2 mb-2">
-                        <a href="<?= BASE_URL ?>/pages/proyek/show.php?id=<?= $p['id'] ?>" 
-                            class="text-sm font-semibold text-slate-800 hover:text-primary-600 transition-colors line-clamp-2 flex-1">
+
+            <!-- Area Dropzone Kartu -->
+            <div class="kanban-dropzone space-y-3 overflow-y-auto flex-1 min-h-[220px] p-1"
+                 data-status="<?= $statusKey ?>"
+                 ondragover="event.preventDefault(); this.classList.add('bg-primary-50/50', 'rounded-xl');"
+                 ondragleave="this.classList.remove('bg-primary-50/50', 'rounded-xl');"
+                 ondrop="handleKanbanDrop(event, this)">
+
+                <?php foreach ($items as $p):
+                    $pid = (int)$p['id'];
+                    $anggota = $timPerProyek[$pid] ?? [];
+                ?>
+                <div class="card p-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-all kanban-card"
+                     draggable="true"
+                     data-id="<?= $pid ?>"
+                     ondragstart="handleDragStart(event, <?= $pid ?>)">
+                    <div class="flex items-start justify-between gap-2 mb-1.5">
+                        <a href="<?= BASE_URL ?>/pages/proyek/show.php?id=<?= $pid ?>" class="text-xs font-bold text-slate-900 hover:text-primary-600 leading-snug">
                             <?= sanitize($p['nama_proyek']) ?>
                         </a>
                     </div>
-                    
-                    <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-3">
-                        <i class="bi bi-person"></i>
-                        <span class="truncate"><?= sanitize($p['nama_pelanggan']) ?></span>
-                    </div>
+                    <p class="text-[11px] text-slate-400 truncate mb-3">
+                        <i class="bi bi-building"></i> <?= sanitize($p['nama_pelanggan']) ?>
+                    </p>
 
-                    <!-- Progress -->
+                    <!-- Progress Bar -->
                     <div class="mb-3">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Progres</span>
-                            <span class="text-xs font-bold" style="color: <?= $statusMeta['color'] ?>"><?= $p['progres'] ?>%</span>
+                        <div class="flex justify-between text-[10px] font-semibold text-slate-500 mb-1">
+                            <span>Progres</span>
+                            <span><?= (int)$p['progres'] ?>%</span>
                         </div>
                         <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div class="h-full rounded-full transition-all" 
-                                style="width: <?= $p['progres'] ?>%; background: <?= $statusMeta['color'] ?>"></div>
+                            <div class="h-full bg-primary-600 rounded-full" style="width: <?= (int)$p['progres'] ?>%"></div>
                         </div>
                     </div>
 
-                    <!-- Meta -->
-                    <div class="flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-100">
-                        <span class="inline-flex items-center gap-1">
-                            <i class="bi bi-calendar3"></i>
-                            <?= formatTanggalShort($p['tanggal_mulai']) ?>
-                        </span>
-                        <span class="inline-flex items-center gap-1">
-                            <i class="bi bi-file-earmark-text"></i>
-                            <?= $p['total_laporan'] ?> laporan
+                    <!-- Footer Kartu: Avatar Tim & Tanggal -->
+                    <div class="flex items-center justify-between pt-2.5 border-t border-slate-100">
+                        <div class="flex items-center -space-x-1.5">
+                            <?php if (empty($anggota)): ?>
+                            <span class="text-[10px] text-slate-400">0 personel</span>
+                            <?php else: ?>
+                            <?php foreach (array_slice($anggota, 0, 3) as $idx => $agt):
+                                $bgAv = ['bg-indigo-600', 'bg-emerald-600', 'bg-sky-600'][$idx % 3];
+                            ?>
+                            <span class="w-6 h-6 rounded-full <?= $bgAv ?> text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white"
+                                  title="<?= sanitize($agt['nama_personel'] . ' (' . $agt['peran_proyek'] . ')') ?>">
+                                <?= strtoupper(substr($agt['nama_personel'], 0, 1)) ?>
+                            </span>
+                            <?php endforeach; ?>
+                            <?php if (count($anggota) > 3): ?>
+                            <span class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-[9px] font-bold flex items-center justify-center ring-2 ring-white">
+                                +<?= count($anggota) - 3 ?>
+                            </span>
+                            <?php endif; ?>
+                            <?php endif; ?>
+                        </div>
+
+                        <span class="text-[10px] text-slate-400">
+                            <i class="bi bi-calendar2"></i> <?= formatTanggalShort($p['tanggal_selesai']) ?>
                         </span>
                     </div>
                 </div>
                 <?php endforeach; ?>
-            <?php endif; ?>
+            </div>
         </div>
+        <?php endforeach; ?>
     </div>
-    <?php endforeach; ?>
 </div>
 
-<style>
-.kanban-column.drag-over {
-    background: #eef2ff;
-    border: 2px dashed #6366f1;
-}
-.kanban-card.dragging {
-    opacity: 0.4;
-    transform: rotate(2deg);
-}
-.line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-</style>
-
 <script>
-let draggedCardId = null;
+let draggedProjectId = null;
 
 function handleDragStart(e, id) {
-    draggedCardId = id;
-    e.target.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
+    draggedProjectId = id;
     e.dataTransfer.setData('text/plain', id);
 }
 
-function handleDragOver(e) {
+function handleKanbanDrop(e, zoneEl) {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    e.currentTarget.classList.add('drag-over');
-}
+    zoneEl.classList.remove('bg-primary-50/50', 'rounded-xl');
+    const newStatus = zoneEl.dataset.status;
+    if (!draggedProjectId || !newStatus) return;
 
-function handleDragLeave(e) {
-    e.currentTarget.classList.remove('drag-over');
-}
+    const cardEl = document.querySelector(`.kanban-card[data-id="${draggedProjectId}"]`);
+    if (!cardEl) return;
 
-function handleDrop(e, newStatus) {
-    e.preventDefault();
-    e.currentTarget.classList.remove('drag-over');
-    
-    const id = draggedCardId;
-    if (!id) return;
-    
-    // Optimistic update UI
-    const card = document.querySelector(`.kanban-card[data-id="${id}"]`);
-    if (card) card.classList.remove('dragging');
-    
-    // Update via AJAX
+    zoneEl.prepend(cardEl);
+    updateKanbanCounts();
+
     fetch('<?= BASE_URL ?>/api/proyek/quick-update.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: new URLSearchParams({
-            id: id,
+            id: draggedProjectId,
             field: 'status',
             value: newStatus
         })
-    }).then(r => r.json()).then(data => {
+    })
+    .then(r => r.json())
+    .then(data => {
         if (data.success) {
-            setTimeout(() => location.reload(), 400);
+            Toast?.show(`Status proyek diubah ke ${newStatus.toUpperCase()}`, 'success');
         } else {
-            alert('Gagal update: ' + (data.message || 'Unknown error'));
+            Toast?.show(data.message || 'Gagal memperbarui status', 'error');
             location.reload();
         }
-    }).catch(() => {
-        alert('Terjadi kesalahan');
-        location.reload();
-    });
+    })
+    .catch(() => Toast?.show('Koneksi gagal', 'error'));
 }
 
-document.addEventListener('dragend', e => {
-    document.querySelectorAll('.kanban-card').forEach(c => c.classList.remove('dragging'));
-    document.querySelectorAll('.kanban-column').forEach(c => c.classList.remove('drag-over'));
-});
+function updateKanbanCounts() {
+    document.querySelectorAll('.kanban-dropzone').forEach(z => {
+        const st = z.dataset.status;
+        const cnt = z.querySelectorAll('.kanban-card').length;
+        const badge = document.getElementById('count_' + st);
+        if (badge) badge.textContent = cnt;
+    });
+}
 </script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

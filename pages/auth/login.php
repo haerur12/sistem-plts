@@ -151,6 +151,7 @@ $pageTitle = 'Login';
                 <?php endif; ?>
 
                 <form method="POST" action="<?= BASE_URL ?>/api/auth/login.php" id="loginForm" class="space-y-5">
+                    <?= csrfField() ?>
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1.5">Email</label>
                         <div class="relative">
@@ -186,6 +187,38 @@ $pageTitle = 'Login';
                         Masuk ke Sistem
                     </button>
                 </form>
+
+                <!-- Divider Login Google -->
+                <div class="relative my-6">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-slate-200"></div>
+                    </div>
+                    <div class="relative flex justify-center text-xs uppercase">
+                        <span class="bg-white px-3 text-slate-400 font-semibold tracking-wider">Atau masuk dengan</span>
+                    </div>
+                </div>
+
+                <!-- Tombol Resmi Google Identity Services -->
+                <script src="https://accounts.google.com/gsi/client" async defer></script>
+                <div class="flex flex-col items-center">
+                    <div id="g_id_onload"
+                         data-client_id="<?= defined('GOOGLE_CLIENT_ID') ? GOOGLE_CLIENT_ID : '' ?>"
+                         data-context="signin"
+                         data-ux_mode="popup"
+                         data-login_uri="<?= BASE_URL ?>/api/auth/google.php"
+                         data-auto_prompt="false">
+                    </div>
+
+                    <div class="g_id_signin w-full flex justify-center"
+                         data-type="standard"
+                         data-shape="rectangular"
+                         data-theme="outline"
+                         data-text="signin_with"
+                         data-size="large"
+                         data-logo_alignment="left"
+                         data-width="340">
+                    </div>
+                </div>
 
                 <!-- Demo accounts -->
                 <div class="mt-7 pt-6 border-t border-slate-100">
