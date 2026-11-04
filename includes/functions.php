@@ -110,7 +110,7 @@ function resolveAvatarUrl(?string $avatar): ?string {
     }
 
     // Jika memilih dari karakter avatar preset (URL eksternal)
-
+    if (str_starts_with($avatar, 'http://') || str_starts_with($avatar, 'https://')) {
         return $avatar;
     }
 
@@ -122,11 +122,4 @@ function resolveAvatarUrl(?string $avatar): ?string {
     }
 
     return null;
-}
-
-
-
-        return $avatar;
-    }
-    return BASE_URL . '/uploads/' . ltrim($avatar, '/');
 }
