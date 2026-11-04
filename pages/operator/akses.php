@@ -9,7 +9,7 @@ require_once __DIR__ . '/../../includes/activity.php';
 
 // Hanya role 'operator' (atau admin jika belum ada akun operator) yang boleh membuka halaman ini
 requireLogin();
-if (!isOperator() && !isRole('admin')) {
+if (!isOperator()) {
     http_response_code(403);
     include __DIR__ . '/../errors/403.php';
     exit;

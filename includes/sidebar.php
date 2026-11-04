@@ -51,7 +51,7 @@ $inisial   = strtoupper(substr($user['nama'] ?? 'U', 0, 1));
 
     <!-- Navigation -->
     <nav class="flex-1 px-3 py-4 space-y-1">
-        <?php if (isOperator() || isRole('admin')): ?>
+        <?php if (isOperator()): ?>
         <!-- Panel Operator -->
         <p class="px-3 pt-2 pb-2 text-[10px] font-bold uppercase tracking-widest text-amber-300/90">Panel Operator</p>
 

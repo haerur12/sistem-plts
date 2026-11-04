@@ -7,7 +7,7 @@ require_once __DIR__ . '/../../includes/csrf.php';
 require_once __DIR__ . '/../../includes/activity.php';
 
 requireLogin();
-if (!isOperator() && !isRole('admin')) {
+if (!isOperator()) {
     http_response_code(403);
     exit('Akses ditolak');
 }
