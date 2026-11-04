@@ -621,4 +621,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     hitungManpower();
     updatePreview();
+
+    // Otomatis pilih proyek jika URL memiliki parameter ?proyek_id=...
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('proyek_id') && document.getElementById('proyek_id')) {
+        document.getElementById('proyek_id').value = urlParams.get('proyek_id');
+        onProyekChange();
+    }
 });

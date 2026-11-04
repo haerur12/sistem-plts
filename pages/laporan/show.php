@@ -590,4 +590,220 @@ document.addEventListener('keydown', e => {
 });
 </script>
 
+<!-- =========================================================================
+     DOKUMEN CETAK RESMI (HANYA MUNCUL SAAT CETAK / SAVE AS PDF - CTRL+P)
+========================================================================== -->
+<div id="printOfficialDocument" class="hidden print:block text-slate-900 bg-white">
+    <!-- KOP SURAT RESMI PT ENERGY LIMA PILAR -->
+    <div class="flex items-center justify-between border-b-4 border-double border-slate-900 pb-4 mb-5">
+        <div class="flex items-center gap-4">
+            <img src="<?= BASE_URL ?>/assets/img/Logo-elp.png" alt="Logo ELP" class="w-16 h-16 object-contain">
+            <div>
+                <h1 class="text-lg font-extrabold uppercase tracking-wide text-slate-900 leading-tight">
+                    PT ENERGY LIMA PILAR
+                </h1>
+                <p class="text-xs font-semibold text-slate-600">Solar PV Rooftop Engineering, Procurement, Construction & Maintenance</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">Dokumen Resmi Laporan Harian Lapangan (Daily Field Progress Report)</p>
+            </div>
+        </div>
+        <div class="text-right border border-slate-300 rounded-lg px-3.5 py-2 bg-slate-50">
+            <div class="text-[10px] font-bold uppercase text-slate-500">No. Dokumen Laporan</div>
+            <div class="text-sm font-extrabold text-slate-900">ELP/DR/<?= date('Y/m', strtotime($laporan['tanggal_laporan'])) ?>/<?= str_pad((string)$laporan['id'], 4, '0', STR_PAD_LEFT) ?></div>
+            <div class="text-[10px] text-slate-500 mt-0.5">Dicetak: <?= date('d/m/Y H:i') ?></div>
+        </div>
+    </div>
+
+    <!-- JUDUL LAPORAN -->
+    <div class="text-center mb-5">
+        <h2 class="text-base font-extrabold uppercase underline tracking-wider">BERITA ACARA & LAPORAN HARIAN PROYEK PLTS</h2>
+        <p class="text-xs font-semibold text-slate-600 mt-0.5"><?= sanitize($laporan['judul_laporan']) ?></p>
+    </div>
+
+    <!-- 1. TABEL INFORMASI PROYEK & CUACA -->
+    <table class="w-full border-collapse border border-slate-400 text-xs mb-5">
+        <tbody>
+            <tr>
+                <td class="border border-slate-300 bg-slate-100 font-bold px-3 py-2 w-1/5">Nama Proyek</td>
+                <td class="border border-slate-300 px-3 py-2 w-2/5 font-semibold"><?= sanitize($laporan['nama_proyek']) ?></td>
+                <td class="border border-slate-300 bg-slate-100 font-bold px-3 py-2 w-1/5">Hari / Tanggal</td>
+                <td class="border border-slate-300 px-3 py-2 w-1/5"><?= sanitize($tgl_wa) ?></td>
+            </tr>
+            <tr>
+                <td class="border border-slate-300 bg-slate-100 font-bold px-3 py-2">Pelanggan / Klien</td>
+                <td class="border border-slate-300 px-3 py-2 font-semibold"><?= sanitize($laporan['nama_pelanggan']) ?></td>
+                <td class="border border-slate-300 bg-slate-100 font-bold px-3 py-2">Jam & Cuaca</td>
+                <td class="border border-slate-300 px-3 py-2"><?= sanitize($laporan['cuaca'] ?: '08.00 - 17.00 Cerah') ?></td>
+            </tr>
+            <tr>
+                <td class="border border-slate-300 bg-slate-100 font-bold px-3 py-2">Area / Gedung</td>
+                <td class="border border-slate-300 px-3 py-2 font-bold text-slate-900"><?= sanitize($laporan['area_kerja'] ?: '-') ?></td>
+                <td class="border border-slate-300 bg-slate-100 font-bold px-3 py-2">Progres Proyek</td>
+                <td class="border border-slate-300 px-3 py-2 font-extrabold"><?= (int)($laporan['kontribusi_progres'] ?? $laporan['progres_proyek']) ?>% (<?= strtoupper(str_replace('_', ' ', $laporan['status_pengerjaan'])) ?>)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- 2. TABEL MANPOWER (PERSONEL LAPANGAN) -->
+    <div class="mb-5">
+        <h3 class="text-xs font-extrabold uppercase tracking-wider mb-2">A. Rekapitulasi Personel Lapangan (Manpower)</h3>
+        <table class="w-full border-collapse border border-slate-400 text-xs text-center">
+            <thead>
+                <tr class="bg-slate-100">
+                    <th class="border border-slate-300 px-2 py-1.5">Project Mgr</th>
+                    <th class="border border-slate-300 px-2 py-1.5">Site Mgr</th>
+                    <th class="border border-slate-300 px-2 py-1.5">Pengawas</th>
+                    <th class="border border-slate-300 px-2 py-1.5">Admin</th>
+                    <th class="border border-slate-300 px-2 py-1.5">HSE / Safety</th>
+                    <th class="border border-slate-300 px-2 py-1.5">Scaffolder</th>
+                    <th class="border border-slate-300 px-2 py-1.5">Teknisi</th>
+                    <th class="border border-slate-300 px-2 py-1.5">Helper</th>
+                    <th class="border border-slate-300 px-2 py-1.5 bg-slate-200 font-extrabold">Total Personel</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="border border-slate-300 py-2 font-semibold"><?= (int)($mp['pm'] ?? 0) ?></td>
+                    <td class="border border-slate-300 py-2 font-semibold"><?= (int)($mp['sm'] ?? 0) ?></td>
+                    <td class="border border-slate-300 py-2 font-semibold"><?= (int)($mp['pengawas'] ?? 0) ?></td>
+                    <td class="border border-slate-300 py-2 font-semibold"><?= (int)($mp['admin'] ?? 0) ?></td>
+                    <td class="border border-slate-300 py-2 font-semibold"><?= (int)($mp['hse'] ?? 0) ?></td>
+                    <td class="border border-slate-300 py-2 font-semibold"><?= (int)($mp['scaffolder'] ?? 0) ?></td>
+                    <td class="border border-slate-300 py-2 font-semibold"><?= (int)($mp['teknisi'] ?? 0) ?></td>
+                    <td class="border border-slate-300 py-2 font-semibold"><?= (int)($mp['helper'] ?? 0) ?></td>
+                    <td class="border border-slate-300 py-2 font-extrabold bg-slate-50"><?= (int)($mp['total'] ?? 0) ?> Orang</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 3. TABEL ACTIVITY PROGRESS & NEXT PLAN -->
+    <div class="grid grid-cols-12 gap-4 mb-5">
+        <div class="col-span-7">
+            <h3 class="text-xs font-extrabold uppercase tracking-wider mb-2">
+                B. Realisasi Pekerjaan (Activity Progress — <?= sanitize($laporan['area_kerja'] ?: '-') ?>)
+            </h3>
+            <table class="w-full border-collapse border border-slate-400 text-xs">
+                <thead>
+                    <tr class="bg-slate-100">
+                        <th class="border border-slate-300 px-2.5 py-1.5 w-10 text-center">No</th>
+                        <th class="border border-slate-300 px-3 py-1.5 text-left">Uraian Item Pekerjaan</th>
+                        <th class="border border-slate-300 px-2.5 py-1.5 w-24 text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($activities)): ?>
+                        <?php foreach ($activities as $idx => $act): ?>
+                        <tr>
+                            <td class="border border-slate-300 px-2.5 py-1.5 text-center"><?= $idx + 1 ?></td>
+                            <td class="border border-slate-300 px-3 py-1.5"><?= sanitize($act['item']) ?></td>
+                            <td class="border border-slate-300 px-2.5 py-1.5 text-center font-bold">
+                                <?= !empty($act['done']) ? '✓ Selesai' : 'Proses' ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="3" class="border border-slate-300 px-3 py-2 whitespace-pre-line"><?= sanitize($laporan['deskripsi']) ?></td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-span-5">
+            <h3 class="text-xs font-extrabold uppercase tracking-wider mb-2">C. Rencana Selanjutnya (Next Plan)</h3>
+            <table class="w-full border-collapse border border-slate-400 text-xs">
+                <thead>
+                    <tr class="bg-slate-100">
+                        <th class="border border-slate-300 px-2.5 py-1.5 w-10 text-center">No</th>
+                        <th class="border border-slate-300 px-3 py-1.5 text-left">Rencana Tindak Lanjut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($next_plans)): ?>
+                        <?php foreach ($next_plans as $idx => $np): ?>
+                        <tr>
+                            <td class="border border-slate-300 px-2.5 py-1.5 text-center"><?= $idx + 1 ?></td>
+                            <td class="border border-slate-300 px-3 py-1.5"><?= sanitize($np) ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="2" class="border border-slate-300 px-3 py-2 text-slate-500 italic">-</td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 4. LAMPIRAN FOTO DOKUMENTASI LAPANGAN -->
+    <?php if (!empty($foto_list)): ?>
+    <div class="mb-6 break-inside-avoid">
+        <h3 class="text-xs font-extrabold uppercase tracking-wider mb-2">D. Dokumentasi Visual Lapangan</h3>
+        <div class="grid grid-cols-3 gap-3">
+            <?php foreach (array_slice($foto_list, 0, 6) as $foto):
+                $imgUrl = $resolveFotoUrl($foto['path_file']);
+            ?>
+            <div class="border border-slate-300 rounded p-1.5 text-center">
+                <img src="<?= sanitize($imgUrl) ?>" class="w-full h-32 object-cover rounded mb-1">
+                <div class="text-[10px] text-slate-600 truncate"><?= sanitize($foto['keterangan'] ?: $foto['nama_file']) ?></div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- 5. KOLOM PENGESAHAN & TANDA TANGAN RESMI -->
+    <div class="mt-8 pt-4 break-inside-avoid">
+        <table class="w-full border-collapse border border-slate-400 text-xs text-center">
+            <thead>
+                <tr class="bg-slate-100">
+                    <th class="border border-slate-300 py-2 w-1/3">Dilaporkan Oleh (Pelaksana Lapangan)</th>
+                    <th class="border border-slate-300 py-2 w-1/3">Diperiksa Oleh (Site / Project Manager)</th>
+                    <th class="border border-slate-300 py-2 w-1/3">Mengetahui (Perwakilan Klien)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="border border-slate-300 h-24 align-bottom py-2 font-bold underline">
+                        <?= sanitize($laporan['nama_teknisi']) ?>
+                    </td>
+                    <td class="border border-slate-300 h-24 align-bottom py-2 font-bold">
+                        ( ................................................. )
+                    </td>
+                    <td class="border border-slate-300 h-24 align-bottom py-2 font-bold">
+                        <?= sanitize($laporan['nama_pelanggan']) ?>
+                    </td>
+                </tr>
+                <tr class="text-[10px] text-slate-500">
+                    <td class="border border-slate-300 py-1">PT Energy Lima Pilar</td>
+                    <td class="border border-slate-300 py-1">PT Energy Lima Pilar</td>
+                    <td class="border border-slate-300 py-1">Pihak Pelanggan / Owner</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 12mm;
+    }
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+    /* Sembunyikan tampilan layar biasa saat dicetak, tampilkan hanya dokumen resmi */
+    .max-w-7xl.mx-auto {
+        display: none !important;
+    }
+    #printOfficialDocument {
+        display: block !important;
+    }
+}
+</style>
+
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

@@ -421,6 +421,406 @@ if (ctxK) {
     exit;
 }
 
+// =========================================================================
+// WORKSPACE DASHBOARD KHUSUS TEKNISI LAPANGAN
+// Letakkan tepat setelah penutup blok if (isGudang()) { ... exit; }
+// =========================================================================
+if (isTeknisi()) {
+    $uid = (int)$user['id'];
+
+    // 1. Statistik Personal Teknisi
+    $stmtStat = $db->prepare("
+        SELECT 
+            COUNT(*) AS total_laporan,
+            COALESCE(SUM(CASE WHEN DATE(tanggal_laporan) = CURDATE() THEN 1 ELSE 0 END), 0) AS laporan_hari_ini,
+            COALESCE(SUM(CASE WHEN YEAR(tanggal_laporan) = YEAR(CURDATE()) AND MONTH(tanggal_laporan) = MONTH(CURDATE()) THEN 1 ELSE 0 END), 0) AS laporan_bulan_ini
+        FROM laporan_lapangan
+        WHERE user_id = ?
+    ");
+    $stmtStat->execute([$uid]);
+    $statTeknisi = $stmtStat->fetch();
+
+    // 2. Daftar Proyek tempat Teknisi ini ditempatkan (dari proyek_tim), fallback ke proyek aktif jika belum diatur
+    $proyekSaya = [];
+    try {
+        $stmtProyekSaya = $db->prepare("
+            SELECT p.*, pl.nama_pelanggan, pt.peran_proyek,
+                   (SELECT COUNT(*) FROM laporan_lapangan l WHERE l.proyek_id = p.id AND DATE(l.tanggal_laporan) = CURDATE()) AS sudah_lapor_hari_ini
+            FROM proyek_tim pt
+            JOIN proyek p ON pt.proyek_id = p.id
+            JOIN pelanggan pl ON p.pelanggan_id = pl.id
+            WHERE pt.user_id = ? AND p.status IN ('survei','perencanaan','instalasi')
+            ORDER BY p.updated_at DESC
+        ");
+        $stmtProyekSaya->execute([$uid]);
+        $proyekSaya = $stmtProyekSaya->fetchAll();
+    } catch (Exception $e) {
+        $proyekSaya = [];
+    }
+
+    // Jika teknisi belum dimasukkan ke proyek_tim mana pun, tampilkan proyek instalasi aktif secara umum
+    if (empty($proyekSaya)) {
+        $proyekSaya = $db->query("
+            SELECT p.*, pl.nama_pelanggan, 'Teknisi Lapangan' AS peran_proyek,
+                   (SELECT COUNT(*) FROM laporan_lapangan l WHERE l.proyek_id = p.id AND DATE(l.tanggal_laporan) = CURDATE()) AS sudah_lapor_hari_ini
+            FROM proyek p
+            JOIN pelanggan pl ON p.pelanggan_id = pl.id
+            WHERE p.status IN ('survei','perencanaan','instalasi')
+            ORDER BY p.created_at DESC
+            LIMIT 4
+        ")->fetchAll();
+    }
+
+    // 3. Ambil Next Plan & Item Pending dari laporan terakhir teknisi ini sebagai To-Do Hari Ini
+    $stmtLast = $db->prepare("
+        SELECT l.*, p.nama_proyek
+        FROM laporan_lapangan l
+        JOIN proyek p ON l.proyek_id = p.id
+        WHERE l.user_id = ?
+        ORDER BY l.tanggal_laporan DESC, l.id DESC
+        LIMIT 1
+    ");
+    $stmtLast->execute([$uid]);
+    $laporanTerakhir = $stmtLast->fetch();
+
+    $todoHariIni = [];
+    if ($laporanTerakhir) {
+        $acts = !empty($laporanTerakhir['activity_progress']) ? json_decode($laporanTerakhir['activity_progress'], true) : [];
+        $nps  = !empty($laporanTerakhir['next_plan']) ? json_decode($laporanTerakhir['next_plan'], true) : [];
+        if (is_array($acts)) {
+            foreach ($acts as $a) {
+                if (empty($a['done']) && !empty($a['item'])) {
+                    $todoHariIni[] = ['teks' => $a['item'], 'tipe' => 'Lanjutan Kemarin'];
+                }
+            }
+        }
+        if (is_array($nps)) {
+            foreach ($nps as $np) {
+                if (is_string($np) && trim($np) !== '') {
+                    $todoHariIni[] = ['teks' => trim($np), 'tipe' => 'Next Plan'];
+                }
+            }
+        }
+    }
+
+    // 4. Jadwal Instalasi Aktif pada Proyek Teknisi
+    $jadwalTeknisi = $db->query("
+        SELECT j.*, p.nama_proyek, p.lokasi
+        FROM jadwal j
+        JOIN proyek p ON j.proyek_id = p.id
+        WHERE j.status IN ('terjadwal', 'berjalan')
+          AND j.tanggal_selesai >= CURDATE()
+        ORDER BY j.tanggal_mulai ASC
+        LIMIT 5
+    ")->fetchAll();
+
+    // 5. Riwayat 5 Laporan Terakhir Teknisi
+    $stmtRiwayat = $db->prepare("
+        SELECT l.*, p.nama_proyek,
+               (SELECT COUNT(*) FROM foto_lapangan f WHERE f.laporan_id = l.id) AS jml_foto
+        FROM laporan_lapangan l
+        JOIN proyek p ON l.proyek_id = p.id
+        WHERE l.user_id = ?
+        ORDER BY l.tanggal_laporan DESC, l.id DESC
+        LIMIT 5
+    ");
+    $stmtRiwayat->execute([$uid]);
+    $riwayatLaporan = $stmtRiwayat->fetchAll();
+
+    include __DIR__ . '/../../includes/header.php';
+    include __DIR__ . '/../../includes/sidebar.php';
+
+    $jam    = (int)date('G');
+    $sapaan = $jam < 11 ? 'Selamat pagi' : ($jam < 15 ? 'Selamat siang' : ($jam < 18 ? 'Selamat sore' : 'Selamat malam'));
+    $sudahLaporHariIni = ((int)$statTeknisi['laporan_hari_ini'] > 0);
+    ?>
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Header Workspace Teknisi -->
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
+            <div>
+                <div class="flex items-center gap-2">
+                    <h2 class="text-xl font-bold text-slate-900 tracking-tight">
+                        <?= $sapaan ?>, <?= sanitize(explode(' ', $user['nama'])[0]) ?>! 🛠️
+                    </h2>
+                    <span class="badge-modern bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">Workspace Teknisi</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">
+                    Pantau penugasan proyek lapangan, rencana kerja hari ini, dan kirim *Daily Report* dengan cepat.
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="<?= BASE_URL ?>/pages/komponen/status.php" class="btn-secondary btn-sm">
+                    <i class="bi bi-boxes text-primary-600"></i> Cek Stok Gudang
+                </a>
+                <a href="<?= BASE_URL ?>/pages/laporan/create.php" class="btn-primary btn-sm shadow-lg shadow-primary-600/25">
+                    <i class="bi bi-plus-lg"></i> Buat Daily Report
+                </a>
+            </div>
+        </div>
+
+        <!-- Banner Status Pelaporan Hari Ini -->
+        <?php if (!$sudahLaporHariIni): ?>
+        <div class="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/20 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center flex-shrink-0">
+                    <i class="bi bi-clipboard2-pulse-fill text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-extrabold">Anda Belum Mengirim Daily Report Hari Ini (<?= date('d M Y') ?>)</h3>
+                    <p class="text-xs text-amber-50 mt-0.5">Jangan lupa mendokumentasikan foto pengerjaan dan memperbarui progres proyek sebelum jam kerja berakhir.</p>
+                </div>
+            </div>
+            <a href="<?= BASE_URL ?>/pages/laporan/create.php"
+               class="px-4 py-2 rounded-xl bg-white text-amber-700 hover:bg-amber-50 text-xs font-extrabold transition-all shadow-sm flex-shrink-0">
+                <i class="bi bi-pencil-square mr-1"></i> Input Laporan Sekarang
+            </a>
+        </div>
+        <?php else: ?>
+        <div class="mb-6 p-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center flex-shrink-0">
+                    <i class="bi bi-check2-all text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-extrabold">Terima Kasih! Anda Sudah Mengirim <?= (int)$statTeknisi['laporan_hari_ini'] ?> Laporan Hari Ini</h3>
+                    <p class="text-xs text-emerald-50 mt-0.5">Data progres dan foto dokumentasi lapangan telah diterima oleh Manajer Proyek.</p>
+                </div>
+            </div>
+            <a href="<?= BASE_URL ?>/pages/laporan/index.php"
+               class="px-4 py-2 rounded-xl bg-white text-emerald-700 hover:bg-emerald-50 text-xs font-extrabold transition-all shadow-sm flex-shrink-0">
+                Lihat Riwayat Laporan
+            </a>
+        </div>
+        <?php endif; ?>
+
+        <!-- KPI Ringkas Teknisi -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="card p-4 stat-card" style="--stat-accent: #4f46e5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Proyek Ditugaskan</p>
+                        <p class="text-2xl font-extrabold text-slate-900 mt-1"><?= count($proyekSaya) ?></p>
+                    </div>
+                    <span class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                        <i class="bi bi-diagram-3-fill text-lg"></i>
+                    </span>
+                </div>
+            </div>
+
+            <div class="card p-4 stat-card" style="--stat-accent: #10b981">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Laporan Hari Ini</p>
+                        <p class="text-2xl font-extrabold text-slate-900 mt-1"><?= (int)$statTeknisi['laporan_hari_ini'] ?></p>
+                    </div>
+                    <span class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <i class="bi bi-calendar2-check-fill text-lg"></i>
+                    </span>
+                </div>
+            </div>
+
+            <div class="card p-4 stat-card" style="--stat-accent: #0ea5e9">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Laporan Bulan Ini</p>
+                        <p class="text-2xl font-extrabold text-slate-900 mt-1"><?= (int)$statTeknisi['laporan_bulan_ini'] ?></p>
+                    </div>
+                    <span class="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
+                        <i class="bi bi-file-earmark-bar-graph-fill text-lg"></i>
+                    </span>
+                </div>
+            </div>
+
+            <div class="card p-4 stat-card" style="--stat-accent: #f59e0b">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Kontribusi</p>
+                        <p class="text-2xl font-extrabold text-slate-900 mt-1"><?= (int)$statTeknisi['total_laporan'] ?></p>
+                    </div>
+                    <span class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                        <i class="bi bi-award-fill text-lg"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+            <!-- KOLOM KIRI (7 KOLOM): PROYEK PENEMPATAN SAYA & RIWAYAT LAPORAN -->
+            <div class="xl:col-span-7 space-y-6">
+                <!-- Daftar Proyek Saya -->
+                <div class="card overflow-hidden">
+                    <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                <i class="bi bi-pin-map-fill text-primary-600"></i> Proyek Penempatan Saya
+                            </h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Klik "Buat Laporan" untuk langsung mengisi *Daily Report* proyek terkait</p>
+                        </div>
+                    </div>
+
+                    <?php if (empty($proyekSaya)): ?>
+                    <div class="p-8 text-center text-sm text-slate-400">Belum ada proyek aktif yang ditugaskan.</div>
+                    <?php else: ?>
+                    <div class="divide-y divide-slate-100">
+                        <?php foreach ($proyekSaya as $ps): ?>
+                        <div class="p-5 hover:bg-slate-50/70 transition-colors">
+                            <div class="flex flex-wrap items-start justify-between gap-3 mb-2.5">
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <a href="<?= BASE_URL ?>/pages/proyek/show.php?id=<?= $ps['id'] ?>" class="text-sm font-bold text-slate-900 hover:text-primary-600">
+                                            <?= sanitize($ps['nama_proyek']) ?>
+                                        </a>
+                                        <?= statusBadge($ps['status']) ?>
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-1 flex items-center gap-2 flex-wrap">
+                                        <span><i class="bi bi-building text-slate-400"></i> <?= sanitize($ps['nama_pelanggan']) ?></span>
+                                        <span>·</span>
+                                        <span class="font-semibold text-indigo-600"><i class="bi bi-person-badge"></i> <?= sanitize($ps['peran_proyek']) ?></span>
+                                    </p>
+                                    <p class="text-xs text-slate-400 mt-1">
+                                        <i class="bi bi-geo-alt text-amber-500"></i> <?= sanitize($ps['lokasi']) ?>
+                                    </p>
+                                </div>
+
+                                <div class="flex items-center gap-2 flex-shrink-0">
+                                    <?php if (!empty($ps['latitude']) && !empty($ps['longitude'])): ?>
+                                    <a href="https://www.google.com/maps?q=<?= urlencode($ps['latitude'] . ',' . $ps['longitude']) ?>"
+                                       target="_blank" class="btn-secondary btn-sm" title="Buka Navigasi Google Maps">
+                                        <i class="bi bi-geo-alt-fill text-red-500"></i> Maps
+                                    </a>
+                                    <?php endif; ?>
+                                    <a href="<?= BASE_URL ?>/pages/laporan/create.php?proyek_id=<?= $ps['id'] ?>" class="btn-primary btn-sm">
+                                        <i class="bi bi-clipboard2-plus"></i> Buat Laporan
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar Proyek -->
+                            <div class="flex items-center gap-3 mt-3 pt-3 border-t border-slate-100">
+                                <div class="flex-1 h-2 progress-track rounded-full overflow-hidden">
+                                    <div class="h-full progress-fill rounded-full" style="width: <?= (int)$ps['progres'] ?>%"></div>
+                                </div>
+                                <span class="text-xs font-extrabold text-slate-700"><?= (int)$ps['progres'] ?>%</span>
+                                <?php if ((int)$ps['sudah_lapor_hari_ini'] > 0): ?>
+                                <span class="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                    ✓ Hari ini sudah lapor
+                                </span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Riwayat Laporan Terakhir Saya -->
+                <div class="card overflow-hidden">
+                    <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <i class="bi bi-clock-history text-sky-600"></i> Laporan Terakhir Saya
+                        </h3>
+                        <a href="<?= BASE_URL ?>/pages/laporan/index.php" class="text-xs font-bold text-primary-600 hover:underline">Lihat Semua</a>
+                    </div>
+                    <?php if (empty($riwayatLaporan)): ?>
+                    <div class="p-8 text-center text-sm text-slate-400">Anda belum pernah mengunggah laporan lapangan.</div>
+                    <?php else: ?>
+                    <div class="divide-y divide-slate-100">
+                        <?php foreach ($riwayatLaporan as $rl): ?>
+                        <div class="px-5 py-3.5 hover:bg-slate-50/70 transition-colors flex items-center justify-between gap-3">
+                            <div class="min-w-0">
+                                <a href="<?= BASE_URL ?>/pages/laporan/show.php?id=<?= $rl['id'] ?>" class="text-xs font-bold text-slate-800 hover:text-primary-600 truncate block">
+                                    <?= sanitize($rl['judul_laporan']) ?> <?= !empty($rl['area_kerja']) ? '(' . sanitize($rl['area_kerja']) . ')' : '' ?>
+                                </a>
+                                <p class="text-[11px] text-slate-400 mt-0.5">
+                                    <?= sanitize($rl['nama_proyek']) ?> · <?= formatTanggal($rl['tanggal_laporan']) ?> · <?= (int)$rl['jml_foto'] ?> foto
+                                </p>
+                            </div>
+                            <a href="<?= BASE_URL ?>/pages/laporan/show.php?id=<?= $rl['id'] ?>" class="btn-secondary btn-sm">Detail</a>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- KOLOM KANAN (5 KOLOM): TO-DO RENCANA KERJA HARI INI & JADWAL -->
+            <div class="xl:col-span-5 space-y-6">
+                <!-- Daftar Rencana Kerja Hari Ini (Dari Next Plan Kemarin) -->
+                <div class="card overflow-hidden">
+                    <div class="px-5 py-4 bg-gradient-to-r from-indigo-600 to-primary-700 text-white">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-bold flex items-center gap-2">
+                                <i class="bi bi-list-check text-lg"></i> Target & Next Plan Hari Ini
+                            </h3>
+                            <span class="text-[11px] px-2 py-0.5 rounded-full bg-white/20 font-bold"><?= count($todoHariIni) ?> Item</span>
+                        </div>
+                        <p class="text-[11px] text-indigo-100 mt-0.5">
+                            <?= $laporanTerakhir ? 'Berdasarkan laporan terakhir proyek ' . sanitize($laporanTerakhir['nama_proyek']) : 'Daftar rencana pekerjaan lapangan' ?>
+                        </p>
+                    </div>
+
+                    <div class="p-5">
+                        <?php if (empty($todoHariIni)): ?>
+                        <div class="py-6 text-center">
+                            <p class="text-xs text-slate-400">Belum ada catatan *Next Plan* dari laporan sebelumnya.</p>
+                        </div>
+                        <?php else: ?>
+                        <div class="space-y-2.5 mb-4">
+                            <?php foreach ($todoHariIni as $idx => $td): ?>
+                            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start justify-between gap-2.5">
+                                <div class="flex items-start gap-2.5">
+                                    <span class="w-5 h-5 rounded-md bg-primary-100 text-primary-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <?= $idx + 1 ?>
+                                    </span>
+                                    <span class="text-xs font-semibold text-slate-800 leading-relaxed"><?= sanitize($td['teks']) ?></span>
+                                </div>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 flex-shrink-0">
+                                    <?= $td['tipe'] ?>
+                                </span>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <a href="<?= BASE_URL ?>/pages/laporan/create.php" class="btn-primary w-full justify-center text-xs">
+                            <i class="bi bi-arrow-repeat"></i> Muat ke Laporan Hari Ini
+                        </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Jadwal Tahapan Instalasi Aktif -->
+                <div class="card p-5">
+                    <h3 class="text-sm font-bold text-slate-900 mb-3 pb-2.5 border-b border-slate-100 flex items-center gap-2">
+                        <i class="bi bi-calendar-event text-emerald-600"></i> Agenda Tahapan Proyek
+                    </h3>
+                    <?php if (empty($jadwalTeknisi)): ?>
+                    <p class="text-xs text-slate-400 py-4 text-center">Tidak ada jadwal instalasi terdekat.</p>
+                    <?php else: ?>
+                    <div class="space-y-3">
+                        <?php foreach ($jadwalTeknisi as $jt): ?>
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                            <div class="flex items-center justify-between gap-2 mb-1">
+                                <span class="text-xs font-bold text-slate-800 truncate"><?= sanitize($jt['nama_proyek']) ?></span>
+                                <?= statusBadge($jt['status']) ?>
+                            </div>
+                            <p class="text-xs text-slate-600"><?= sanitize($jt['keterangan'] ?: 'Tahap Instalasi') ?></p>
+                            <p class="text-[11px] text-slate-400 mt-1">
+                                <i class="bi bi-calendar2"></i> <?= formatTanggalShort($jt['tanggal_mulai']) ?> — <?= formatTanggalShort($jt['tanggal_selesai']) ?>
+                            </p>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <?php
+    include __DIR__ . '/../../includes/footer.php';
+    exit;
+}
+
 // ============ STATISTIK DASAR ============
 $totalProyek    = (int) $db->query("SELECT COUNT(*) FROM proyek")->fetchColumn();
 $proyekAktif    = (int) $db->query("SELECT COUNT(*) FROM proyek WHERE status IN ('survei','perencanaan','instalasi')")->fetchColumn();
