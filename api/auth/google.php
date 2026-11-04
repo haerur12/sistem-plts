@@ -72,18 +72,18 @@ if ($user['status'] !== 'aktif') {
     redirect(BASE_URL . '/pages/auth/login.php');
 }
 
-// 5. Tautkan google_id & foto profil Google ke akun user jika belum tersimpan
-$stmtUpdate = $db->prepare("UPDATE users SET google_id = ?, avatar = ?, last_seen = NOW(), is_online = 1 WHERE id = ?");
-$stmtUpdate->execute([$googleId, $avatar, $user['id']]);
+// 5. Tautkan google_id saja, biarkan kolom avatar tetap seperti pengaturan user di aplikasi (default NULL = Inisial Huruf)
+$stmtUpdate = $db->prepare("UPDATE users SET google_id = ?, last_seen = NOW(), is_online = 1 WHERE id = ?");
+$stmtUpdate->execute([$googleId, $user['id']]);
 
-// 6. Buat session yang aman
+// 6. Buat session menggunakan avatar dari database (jika NULL maka otomatis tampil huruf awal)
 session_regenerate_id(true);
 $_SESSION['user'] = [
     'id'     => $user['id'],
     'nama'   => $user['nama'],
     'email'  => $user['email'],
     'role'   => $user['role'],
-    'avatar' => $avatar,
+    'avatar' => $user['avatar'] ?? null,
 ];
 
 logActivity('login_google', 'login', 'Masuk ke sistem menggunakan Akun Google', 'auth');

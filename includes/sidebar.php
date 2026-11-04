@@ -17,7 +17,8 @@ $roleLabels = [
 ];
 $roleColor = $roleColors[$user['role']] ?? 'from-slate-500 to-slate-600';
 $roleLabel = $roleLabels[$user['role']] ?? $user['role'];
-$inisial   = strtoupper(substr($user['nama'] ?? 'U', 0, 1));
+$inisial       = strtoupper(substr(trim($user['nama'] ?? 'U'), 0, 1));
+$userAvatarUrl = function_exists('resolveAvatarUrl') ? resolveAvatarUrl($user['avatar'] ?? null) : null;
 ?>
 
 <!-- Sidebar -->
@@ -38,15 +39,25 @@ $inisial   = strtoupper(substr($user['nama'] ?? 'U', 0, 1));
 
     <!-- User Info -->
     <div class="mx-4 mt-4 mb-2 px-4 py-3.5 rounded-xl bg-white/5 border border-white/10">
-        <div class="flex items-center gap-3">
+        <a href="<?= BASE_URL ?>/pages/profil/index.php" class="flex items-center gap-3 group">
+            <?php if (!empty($userAvatarUrl)): ?>
+            <img src="<?= sanitize($userAvatarUrl) ?>" alt="<?= $inisial ?>"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                 class="w-10 h-10 rounded-lg object-cover flex-shrink-0 ring-2 ring-white/20 bg-white">
+            <div style="display:none" class="w-10 h-10 rounded-lg bg-gradient-to-br <?= $roleColor ?> items-center justify-center text-white font-bold text-sm flex-shrink-0 ring-2 ring-white/20">
+                <?= $inisial ?>
+            </div>
+            <?php else: ?>
+            <!-- Default: Avatar berdasarkan huruf awal (seperti sebelum update) -->
             <div class="w-10 h-10 rounded-lg bg-gradient-to-br <?= $roleColor ?> flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ring-2 ring-white/20">
                 <?= $inisial ?>
             </div>
+            <?php endif; ?>
             <div class="min-w-0">
                 <div class="text-white text-sm font-semibold truncate"><?= sanitize($user['nama'] ?? '') ?></div>
                 <div class="text-indigo-300/80 text-xs mt-0.5"><?= $roleLabel ?></div>
             </div>
-        </div>
+        </a>
     </div>
 
     <!-- Navigation -->
@@ -252,9 +263,19 @@ $inisial   = strtoupper(substr($user['nama'] ?? 'U', 0, 1));
             <div class="relative" id="userMenu">
                 <button type="button" onclick="toggleUserMenu()"
                     class="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-slate-100 transition-colors">
-                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br <?= $roleColor ?> flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-sm">
-                        <?= strtoupper(substr($user['nama'] ?? 'U', 0, 1)) ?>
+                    <?php if (!empty($userAvatarUrl)): ?>
+                    <img src="<?= sanitize($userAvatarUrl) ?>" alt="<?= $inisial ?>"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                         class="w-8 h-8 rounded-lg object-cover flex-shrink-0 shadow-sm ring-1 ring-slate-200 bg-white">
+                    <div style="display:none" class="w-8 h-8 rounded-lg bg-gradient-to-br <?= $roleColor ?> items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-sm">
+                        <?= $inisial ?>
                     </div>
+                    <?php else: ?>
+                    <!-- Default: Avatar berdasarkan huruf awal (seperti sebelum update) -->
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br <?= $roleColor ?> flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-sm">
+                        <?= $inisial ?>
+                    </div>
+                    <?php endif; ?>
                     <div class="hidden sm:block text-left">
                         <div class="text-xs font-bold text-slate-700 leading-tight"><?= sanitize($user['nama'] ?? '') ?></div>
                         <div class="text-[10px] text-slate-400 leading-tight"><?= $roleLabel ?></div>

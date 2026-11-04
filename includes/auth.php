@@ -15,7 +15,7 @@ function currentUser(): array {
     if (!$synced && !empty($_SESSION['user']['id']) && function_exists('db')) {
         $synced = true;
         try {
-            $stmt = db()->prepare("SELECT nama, email, role FROM users WHERE id = ? LIMIT 1");
+            $stmt = db()->prepare("SELECT nama, email, role, avatar FROM users WHERE id = ? LIMIT 1");
             $stmt->execute([$_SESSION['user']['id']]);
             if ($fresh = $stmt->fetch()) {
                 $_SESSION['user']['nama']  = $fresh['nama'];
@@ -23,6 +23,7 @@ function currentUser(): array {
                 if (!empty($fresh['role'])) {
                     $_SESSION['user']['role'] = $fresh['role'];
                 }
+                $_SESSION['user']['avatar'] = $fresh['avatar'] ?? null;
             }
         } catch (Exception $e) {}
     }

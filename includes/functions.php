@@ -100,4 +100,33 @@ function verifyCsrfToken(): bool {
     if (session_status() === PHP_SESSION_NONE) session_start();
     $token = $_POST['csrf_token'] ?? '';
     return !empty($token) && hash_equals($_SESSION['csrf_token'] ?? '', $token);
-}
+}
+
+function resolveAvatarUrl(?string $avatar): ?string {
+    if ($avatar === null) return null;
+    $avatar = trim($avatar);
+    if ($avatar === '' || strtolower($avatar) === 'null' || $avatar === '-') {
+        return null;
+    }
+
+    // Jika memilih dari karakter avatar preset (URL eksternal)
+
+        return $avatar;
+    }
+
+    // Jika hasil upload file lokal, pastikan file fisiknya benar-benar ada di folder uploads/
+    $cleanPath = ltrim($avatar, '/');
+    $fullPath  = __DIR__ . '/../uploads/' . $cleanPath;
+    if (is_file($fullPath)) {
+        return BASE_URL . '/uploads/' . $cleanPath;
+    }
+
+    return null;
+}
+
+
+
+        return $avatar;
+    }
+    return BASE_URL . '/uploads/' . ltrim($avatar, '/');
+}
