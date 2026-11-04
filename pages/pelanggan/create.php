@@ -1,4 +1,5 @@
 <?php
+// pages/pelanggan/create.php — FORM TAMBAH PELANGGAN
 $pageTitle   = 'Tambah Pelanggan';
 $currentPage = 'pelanggan';
 require_once __DIR__ . '/../../config/database.php';
@@ -10,41 +11,56 @@ include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
 ?>
 
-<div class="max-w-2xl mx-auto">
-    <div class="flex items-center gap-3 mb-5">
-        <a href="<?= BASE_URL ?>/pages/pelanggan/index.php" class="p-2 hover:bg-slate-100 rounded-lg">
-            <i class="bi bi-arrow-left text-slate-500"></i>
+<div class="max-w-xl mx-auto">
+    <nav class="breadcrumb mb-3">
+        <a href="<?= BASE_URL ?>/pages/dashboard/index.php">Dashboard</a>
+        <span class="sep"><i class="bi bi-chevron-right text-[10px]"></i></span>
+        <a href="<?= BASE_URL ?>/pages/pelanggan/index.php">Data Pelanggan</a>
+        <span class="sep"><i class="bi bi-chevron-right text-[10px]"></i></span>
+        <span class="current">Tambah Pelanggan</span>
+    </nav>
+
+    <div class="flex items-center gap-3.5 mb-5">
+        <a href="<?= BASE_URL ?>/pages/pelanggan/index.php" class="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors shadow-2xs">
+            <i class="bi bi-arrow-left"></i>
         </a>
         <div>
-            <h2 class="text-lg font-bold text-slate-900">Tambah Pelanggan</h2>
-            <p class="text-sm text-slate-400">Masukkan informasi pelanggan</p>
+            <h2 class="text-xl font-bold text-slate-900 tracking-tight">Tambah Pelanggan / Klien Baru</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Masukkan identitas perusahaan atau pemilik lokasi instalasi PLTS</p>
         </div>
     </div>
+
     <div class="card p-6">
-        <form method="POST" action="<?= BASE_URL ?>/api/pelanggan/store.php">
-            <div class="space-y-4">
+        <form method="POST" action="<?= BASE_URL ?>/api/pelanggan/store.php" class="space-y-4">
+            <?= csrfField() ?>
+            <div>
+                <label class="form-label">Nama Perusahaan / Pelanggan <span class="text-red-500">*</span></label>
+                <input type="text" name="nama_pelanggan" class="form-input"
+                       placeholder="Contoh: PT Yamaha Motor Parts Manufacturing Indonesia" required autofocus>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <label class="form-label" for="nama_pelanggan">Nama Pelanggan <span class="text-red-500">*</span></label>
-                    <input id="nama_pelanggan" type="text" name="nama_pelanggan" class="form-input" required maxlength="150">
+                    <label class="form-label">No. Telepon / WhatsApp PIC <span class="text-red-500">*</span></label>
+                    <input type="text" name="no_telp" class="form-input" placeholder="Contoh: 081234567890" required>
                 </div>
                 <div>
-                    <label class="form-label" for="alamat">Alamat <span class="text-red-500">*</span></label>
-                    <textarea id="alamat" name="alamat" class="form-input" rows="3" required></textarea>
+                    <label class="form-label">Alamat Email <span class="text-slate-400 font-normal">(Opsional)</span></label>
+                    <input type="email" name="email" class="form-input" placeholder="pic@perusahaan.co.id">
                 </div>
-                <div class="grid sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="form-label" for="no_telp">Nomor Telepon <span class="text-red-500">*</span></label>
-                        <input id="no_telp" type="tel" name="no_telp" class="form-input" required maxlength="30">
-                    </div>
-                    <div>
-                        <label class="form-label" for="email">Email</label>
-                        <input id="email" type="email" name="email" class="form-input" maxlength="150">
-                    </div>
-                </div>
-                <div class="flex gap-3 pt-2">
-                    <a href="<?= BASE_URL ?>/pages/pelanggan/index.php" class="btn-secondary flex-1 justify-center">Batal</a>
-                    <button type="submit" class="btn-primary flex-1 justify-center"><i class="bi bi-check-lg"></i> Simpan</button>
-                </div>
+            </div>
+
+            <div>
+                <label class="form-label">Alamat Lengkap Lokasi / Kawasan Industri <span class="text-red-500">*</span></label>
+                <textarea name="alamat" rows="3" class="form-textarea"
+                          placeholder="Contoh: Kawasan Industri KIIC, Jl. Harapan Raya Lot G, Karawang, Jawa Barat" required></textarea>
+            </div>
+
+            <div class="flex items-center gap-3 pt-3 border-t border-slate-100">
+                <a href="<?= BASE_URL ?>/pages/pelanggan/index.php" class="btn-secondary flex-1 justify-center">Batal</a>
+                <button type="submit" class="btn-primary flex-1 justify-center">
+                    <i class="bi bi-check-lg"></i> Simpan Pelanggan
+                </button>
             </div>
         </form>
     </div>
