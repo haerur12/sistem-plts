@@ -832,7 +832,7 @@ $laporanHariIni = (int) $db->query("SELECT COUNT(*) FROM laporan_lapangan WHERE 
 $currentMonth = date('Y-m');
 $lastMonth    = date('Y-m', strtotime('-1 month'));
 
-$proyekBulanIni  = (int) $db->prepare("SELECT COUNT(*) FROM proyek WHERE DATE_FORMAT(created_at, '%Y-%m') = ?")->execute([$currentMonth]) ? $db->query("SELECT COUNT(*) FROM proyek WHERE DATE_FORMAT(created_at, '%Y-%m') = '$currentMonth'")->fetchColumn() : 0;
+$proyekBulanIni  = (int) $db->query("SELECT COUNT(*) FROM proyek WHERE DATE_FORMAT(created_at, '%Y-%m') = '$currentMonth'")->fetchColumn();
 $proyekBulanLalu = (int) $db->query("SELECT COUNT(*) FROM proyek WHERE DATE_FORMAT(created_at, '%Y-%m') = '$lastMonth'")->fetchColumn();
 
 $laporanBulanIni  = (int) $db->query("SELECT COUNT(*) FROM laporan_lapangan WHERE DATE_FORMAT(created_at, '%Y-%m') = '$currentMonth'")->fetchColumn();
@@ -925,10 +925,23 @@ $sapaan = $jam < 11 ? 'Selamat pagi' : ($jam < 15 ? 'Selamat siang' : ($jam < 18
 <div class="mb-6 flex items-center justify-between flex-wrap gap-3">
     <div>
         <h2 class="text-xl font-bold text-slate-900 tracking-tight"><?= $sapaan ?>, <?= sanitize(explode(' ', $user['nama'] ?? 'Pengguna')[0]) ?> 👋</h2>
-        <p class="text-sm text-slate-500 mt-1">Berikut ringkasan sistem PLTS hari ini · <?= $laporanHariIni ?> laporan masuk hari ini.</p>
+        <p class="text-sm text-slate-500 mt-1">Berikut ringkasan operasional PLTS hari ini · <strong><?= $laporanHariIni ?> laporan lapangan</strong> masuk hari ini.</p>
     </div>
-    <div class="flex gap-2">
-        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-600 shadow-sm">
+    <div class="flex flex-wrap items-center gap-2">
+        <?php if (isAdmin()): ?>
+        <a href="<?= BASE_URL ?>/pages/proyek/create.php" class="btn-secondary btn-sm">
+            <i class="bi bi-plus-circle text-primary-600"></i> Proyek Baru
+        </a>
+        <?php endif; ?>
+        <?php if (isAdminOrManajer()): ?>
+        <a href="<?= BASE_URL ?>/pages/jadwal/create.php" class="btn-secondary btn-sm">
+            <i class="bi bi-calendar-plus text-indigo-600"></i> + Jadwal
+        </a>
+        <?php endif; ?>
+        <a href="<?= BASE_URL ?>/pages/laporan/create.php" class="btn-primary btn-sm">
+            <i class="bi bi-clipboard2-plus"></i> Input Daily Report
+        </a>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 shadow-2xs">
             <i class="bi bi-calendar3 text-primary-600"></i> <?= date('d M Y') ?>
         </span>
     </div>

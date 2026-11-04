@@ -1,11 +1,11 @@
 <?php
-// pages/analitik/index.php — LAPORAN & ANALITIK
+// pages/analitik/index.php — LAPORAN & ANALITIK EKSEKUTIF V2
 $pageTitle   = 'Laporan & Analitik';
 $currentPage = 'analitik';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/auth.php';
-requireRole(['admin','manajer_proyek']);
+requireRole(['admin', 'manajer_proyek']);
 
 $db = db();
 
@@ -13,15 +13,15 @@ $db = db();
 $trenBulanan = [];
 for ($i = 11; $i >= 0; $i--) {
     $bulan = date('Y-m', strtotime("-$i months"));
-    $label = date('M', strtotime("-$i months"));
+    $label = date('M Y', strtotime("-$i months"));
 
     $stmt = $db->prepare("SELECT COUNT(*) FROM proyek WHERE DATE_FORMAT(created_at, '%Y-%m') = ?");
     $stmt->execute([$bulan]);
-    $baru = (int) $stmt->fetchColumn();
+    $baru = (int)$stmt->fetchColumn();
 
     $stmt = $db->prepare("SELECT COUNT(*) FROM proyek WHERE status='selesai' AND DATE_FORMAT(tanggal_selesai, '%Y-%m') = ?");
     $stmt->execute([$bulan]);
-    $selesai = (int) $stmt->fetchColumn();
+    $selesai = (int)$stmt->fetchColumn();
 
     $trenBulanan[] = ['label' => $label, 'baru' => $baru, 'selesai' => $selesai];
 }
@@ -32,7 +32,7 @@ $distribusi = $db->query("SELECT status, COUNT(*) as total FROM proyek GROUP BY 
 // ============ PRODUKTIVITAS TEKNISI ============
 $produktivitas = $db->query("
     SELECT u.nama, u.id, COUNT(l.id) as total_laporan,
-    COUNT(DISTINCT l.proyek_id) as total_proyek
+           COUNT(DISTINCT l.proyek_id) as total_proyek
     FROM users u
     LEFT JOIN laporan_lapangan l ON l.user_id = u.id
     WHERE u.role = 'teknisi_lapangan'
@@ -44,8 +44,8 @@ $produktivitas = $db->query("
 // ============ TOP 5 KOMPONEN TERPAKAI ============
 $topKomponen = $db->query("
     SELECT k.nama_komponen, k.kategori, k.satuan,
-    SUM(pm.jumlah_digunakan) as total_pakai,
-    COUNT(DISTINCT pm.proyek_id) as jumlah_proyek
+           SUM(pm.jumlah_digunakan) as total_pakai,
+           COUNT(DISTINCT pm.proyek_id) as jumlah_proyek
     FROM penggunaan_material pm
     JOIN komponen k ON pm.komponen_id = k.id
     GROUP BY k.id, k.nama_komponen, k.kategori, k.satuan
@@ -53,149 +53,226 @@ $topKomponen = $db->query("
     LIMIT 5
 ")->fetchAll();
 
+// ============ EVALUASI KESEHATAN TIMELINE PROYEK ============
+$proyekOverdue = (int)$db->query("
+    SELECT COUNT(*) FROM proyek 
+    WHERE status IN ('survei','perencanaan','instalasi') 
+      AND tanggal_selesai < CURDATE()
+")->fetchColumn();
+
+$proyekOnTrack = (int)$db->query("
+    SELECT COUNT(*) FROM proyek 
+    WHERE status IN ('survei','perencanaan','instalasi') 
+      AND tanggal_selesai >= CURDATE()
+")->fetchColumn();
+
 // ============ STATISTIK RINGKASAN ============
-$totalProyek     = (int) $db->query("SELECT COUNT(*) FROM proyek")->fetchColumn();
-$totalLaporan    = (int) $db->query("SELECT COUNT(*) FROM laporan_lapangan")->fetchColumn();
-$rataProgres     = (int) $db->query("SELECT COALESCE(AVG(progres),0) FROM proyek WHERE status != 'selesai'")->fetchColumn();
-$teknisiAktif    = (int) $db->query("SELECT COUNT(DISTINCT user_id) FROM laporan_lapangan WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)")->fetchColumn();
+$totalProyek  = (int)$db->query("SELECT COUNT(*) FROM proyek")->fetchColumn();
+$totalLaporan = (int)$db->query("SELECT COUNT(*) FROM laporan_lapangan")->fetchColumn();
+$rataProgres  = (int)$db->query("SELECT COALESCE(ROUND(AVG(progres)), 0) FROM proyek WHERE status != 'selesai'")->fetchColumn();
+$teknisiAktif = (int)$db->query("SELECT COUNT(DISTINCT user_id) FROM laporan_lapangan WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)")->fetchColumn();
 
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
 ?>
 
-<div class="flex items-start justify-between mb-5 flex-wrap gap-3">
-    <div class="flex items-center gap-3">
-        <span class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shadow-lg shadow-amber-500/25">
-            <i class="bi bi-graph-up-arrow text-lg"></i>
-        </span>
-        <div>
-            <h2 class="text-lg font-bold text-slate-900 tracking-tight">Laporan & Analitik</h2>
-            <p class="text-[13px] text-slate-500 mt-0.5">Insight performa sistem PLTS 12 bulan terakhir</p>
-        </div>
-    </div>
-</div>
+<div class="max-w-7xl mx-auto">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb mb-3">
+        <a href="<?= BASE_URL ?>/pages/dashboard/index.php">Dashboard</a>
+        <span class="sep"><i class="bi bi-chevron-right text-[10px]"></i></span>
+        <span class="current">Laporan & Analitik Eksekutif</span>
+    </nav>
 
-<!-- Summary Cards -->
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    <?php
-    $summary = [
-        ['Total Proyek', $totalProyek, 'bi-diagram-3', '#4f46e5', 'bg-indigo-50 text-indigo-600'],
-        ['Total Laporan', $totalLaporan, 'bi-file-earmark-text', '#0ea5e9', 'bg-sky-50 text-sky-600'],
-        ['Rata-rata Progres', $rataProgres.'%', 'bi-speedometer2', '#f59e0b', 'bg-amber-50 text-amber-600'],
-        ['Teknisi Aktif (30d)', $teknisiAktif, 'bi-people', '#10b981', 'bg-emerald-50 text-emerald-600'],
-    ];
-    foreach ($summary as $s): ?>
-    <div class="card p-5 stat-card" style="--stat-accent: <?= $s[3] ?>">
-        <div class="flex items-start justify-between">
-            <div>
-                <p class="text-[13px] font-medium text-slate-500 mb-1"><?= $s[0] ?></p>
-                <p class="text-[28px] leading-none font-extrabold text-slate-900 tracking-tight"><?= $s[1] ?></p>
-            </div>
-            <div class="w-11 h-11 <?= $s[4] ?> rounded-xl flex items-center justify-center flex-shrink-0">
-                <i class="bi <?= $s[2] ?> text-lg"></i>
-            </div>
-        </div>
-    </div>
-    <?php endforeach; ?>
-</div>
-
-<!-- Chart: Tren Bulanan + Pie Status -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-    <div class="card p-5 lg:col-span-2">
-        <div class="flex items-center justify-between mb-4">
-            <div>
-                <h3 class="text-sm font-bold text-slate-800 tracking-tight">Tren Proyek 12 Bulan</h3>
-                <p class="text-xs text-slate-400 mt-0.5">Proyek baru dibuat vs proyek selesai</p>
-            </div>
-            <span class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                <i class="bi bi-graph-up"></i>
+    <!-- Header -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div class="flex items-center gap-3.5">
+            <span class="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary-600 to-indigo-700 flex items-center justify-center text-white shadow-lg shadow-primary-600/25">
+                <i class="bi bi-graph-up-arrow text-lg"></i>
             </span>
-        </div>
-        <div class="h-72"><canvas id="chartTren"></canvas></div>
-    </div>
-
-    <div class="card p-5">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-bold text-slate-800 tracking-tight">Distribusi Status</h3>
-            <span class="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
-                <i class="bi bi-pie-chart"></i>
-            </span>
-        </div>
-        <div class="h-72 flex items-center justify-center"><canvas id="chartStatus"></canvas></div>
-    </div>
-</div>
-
-<!-- Produktivitas Teknisi + Top Komponen -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-    <!-- Produktivitas Teknisi -->
-    <div class="card p-5">
-        <div class="flex items-center justify-between mb-4">
             <div>
-                <h3 class="text-sm font-bold text-slate-800 tracking-tight">Produktivitas Teknisi</h3>
-                <p class="text-xs text-slate-400 mt-0.5">Jumlah laporan lapangan per teknisi</p>
+                <h2 class="text-xl font-bold text-slate-900 tracking-tight">Laporan & Analitik Performa Sistem</h2>
+                <p class="text-xs text-slate-500 mt-0.5">Evaluasi tren penyelesaian proyek PLTS, produktivitas tim teknis, dan konsumsi material 12 bulan terakhir</p>
             </div>
-            <span class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <i class="bi bi-people-fill"></i>
-            </span>
         </div>
-        <?php if (empty($produktivitas)): ?>
-        <div class="py-10 text-center">
-            <p class="text-sm text-slate-400">Belum ada data teknisi</p>
+
+        <div class="flex items-center gap-2">
+            <button type="button" onclick="window.print()" class="btn-secondary btn-sm">
+                <i class="bi bi-printer"></i> Cetak Ringkasan
+            </button>
+            <a href="<?= BASE_URL ?>/pages/laporan/stok.php" class="btn-primary btn-sm">
+                <i class="bi bi-file-bar-graph"></i> Analitik Stok Gudang
+            </a>
         </div>
-        <?php else: ?>
-        <div class="h-72"><canvas id="chartTeknisi"></canvas></div>
-        <?php endif; ?>
     </div>
 
-    <!-- Top 5 Komponen -->
-    <div class="card p-5">
-        <div class="flex items-center justify-between mb-4">
-            <div>
-                <h3 class="text-sm font-bold text-slate-800 tracking-tight">Top 5 Komponen Terpakai</h3>
-                <p class="text-xs text-slate-400 mt-0.5">Komponen paling sering digunakan</p>
+    <!-- Summary KPI Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3.5 mb-6">
+        <div class="card p-4 stat-card" style="--stat-accent: #4f46e5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Proyek</p>
+                    <p class="text-2xl font-extrabold text-slate-900 mt-1"><?= $totalProyek ?></p>
+                </div>
+                <span class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <i class="bi bi-diagram-3-fill"></i>
+                </span>
             </div>
-            <span class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                <i class="bi bi-trophy-fill"></i>
-            </span>
         </div>
-        <?php if (empty($topKomponen)): ?>
-        <div class="py-10 text-center">
-            <p class="text-sm text-slate-400">Belum ada data penggunaan</p>
+
+        <div class="card p-4 stat-card" style="--stat-accent: #10b981">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Proyek On-Track</p>
+                    <p class="text-2xl font-extrabold text-slate-900 mt-1"><?= $proyekOnTrack ?></p>
+                </div>
+                <span class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <i class="bi bi-check-circle-fill"></i>
+                </span>
+            </div>
         </div>
-        <?php else: ?>
-        <div class="space-y-3">
-            <?php
-            $maxPakai = max(array_column($topKomponen, 'total_pakai'));
-            $medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
-            foreach ($topKomponen as $i => $k):
-                $pct = $maxPakai > 0 ? round(($k['total_pakai'] / $maxPakai) * 100) : 0;
-            ?>
-            <div>
-                <div class="flex items-center justify-between mb-1.5">
-                    <div class="flex items-center gap-2 min-w-0 flex-1">
-                        <span class="text-lg"><?= $medals[$i] ?? '•' ?></span>
-                        <div class="min-w-0 flex-1">
-                            <p class="text-sm font-semibold text-slate-800 truncate"><?= sanitize($k['nama_komponen']) ?></p>
-                            <p class="text-[11px] text-slate-400"><?= sanitize($k['kategori']) ?> · <?= $k['jumlah_proyek'] ?> proyek</p>
+
+        <div class="card p-4 stat-card" style="--stat-accent: <?= $proyekOverdue > 0 ? '#ef4444' : '#64748b' ?>">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Lewat Estimasi</p>
+                    <p class="text-2xl font-extrabold <?= $proyekOverdue > 0 ? 'text-red-600' : 'text-slate-900' ?> mt-1"><?= $proyekOverdue ?></p>
+                </div>
+                <span class="w-9 h-9 rounded-xl <?= $proyekOverdue > 0 ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-500' ?> flex items-center justify-center">
+                    <i class="bi bi-exclamation-octagon-fill"></i>
+                </span>
+            </div>
+        </div>
+
+        <div class="card p-4 stat-card" style="--stat-accent: #0ea5e9">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Laporan Masuk</p>
+                    <p class="text-2xl font-extrabold text-slate-900 mt-1"><?= $totalLaporan ?></p>
+                </div>
+                <span class="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
+                    <i class="bi bi-file-earmark-text-fill"></i>
+                </span>
+            </div>
+        </div>
+
+        <div class="card p-4 stat-card" style="--stat-accent: #f59e0b">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Rata-rata Progres</p>
+                    <p class="text-2xl font-extrabold text-slate-900 mt-1"><?= $rataProgres ?>%</p>
+                </div>
+                <span class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                    <i class="bi bi-speedometer2"></i>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart: Tren Bulanan + Pie Status -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+        <div class="card p-5 lg:col-span-2">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-800 tracking-tight">Tren Proyek 12 Bulan Terakhir</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Perbandingan proyek baru dimulai vs proyek selesai per bulan</p>
+                </div>
+                <span class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <i class="bi bi-graph-up"></i>
+                </span>
+            </div>
+            <div class="h-72"><canvas id="chartTren"></canvas></div>
+        </div>
+
+        <div class="card p-5">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-800 tracking-tight">Komposisi Status Proyek</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Proporsi tahapan seluruh proyek</p>
+                </div>
+                <span class="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
+                    <i class="bi bi-pie-chart-fill"></i>
+                </span>
+            </div>
+            <div class="h-72 flex items-center justify-center"><canvas id="chartStatus"></canvas></div>
+        </div>
+    </div>
+
+    <!-- Produktivitas Teknisi + Top 5 Komponen (Dengan Rank Badges Profesional Tanpa Emoji) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <!-- Produktivitas Teknisi -->
+        <div class="card p-5">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-800 tracking-tight">Produktivitas Teknisi Lapangan</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Jumlah laporan harian vs keterlibatan proyek per teknisi (<?= $teknisiAktif ?> aktif 30 hari terakhir)</p>
+                </div>
+                <span class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <i class="bi bi-people-fill"></i>
+                </span>
+            </div>
+            <?php if (empty($produktivitas)): ?>
+            <div class="py-12 text-center text-sm text-slate-400">Belum ada data teknisi lapangan</div>
+            <?php else: ?>
+            <div class="h-72"><canvas id="chartTeknisi"></canvas></div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Top 5 Komponen Terpakai -->
+        <div class="card p-5">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-800 tracking-tight">Top 5 Komponen PLTS Paling Banyak Dipakai</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Akumulasi pemakaian material tertinggi lintas proyek</p>
+                </div>
+                <span class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                    <i class="bi bi-award-fill"></i>
+                </span>
+            </div>
+
+            <?php if (empty($topKomponen)): ?>
+            <div class="py-12 text-center text-sm text-slate-400">Belum ada catatan penggunaan komponen</div>
+            <?php else: ?>
+            <div class="space-y-4">
+                <?php
+                $maxPakai = max(array_column($topKomponen, 'total_pakai'));
+                $rankBadgeStyles = [
+                    0 => 'bg-amber-500 text-white shadow-sm shadow-amber-500/30',
+                    1 => 'bg-slate-400 text-white',
+                    2 => 'bg-amber-700 text-white',
+                ];
+                foreach ($topKomponen as $i => $k):
+                    $pct = $maxPakai > 0 ? round(($k['total_pakai'] / $maxPakai) * 100) : 0;
+                    $rCls = $rankBadgeStyles[$i] ?? 'bg-slate-100 text-slate-600 border border-slate-200';
+                ?>
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex items-center gap-3 min-w-0 flex-1">
+                            <span class="w-7 h-7 rounded-lg text-xs font-extrabold flex items-center justify-center flex-shrink-0 <?= $rCls ?>">
+                                #<?= $i + 1 ?>
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm font-bold text-slate-800 truncate"><?= sanitize($k['nama_komponen']) ?></p>
+                                <p class="text-[11px] text-slate-400"><?= sanitize($k['kategori']) ?> · Digunakan pada <?= $k['jumlah_proyek'] ?> proyek</p>
+                            </div>
+                        </div>
+                        <div class="text-right flex-shrink-0 ml-3">
+                            <span class="text-sm font-extrabold text-slate-900"><?= number_format((int)$k['total_pakai']) ?></span>
+                            <span class="text-xs text-slate-400"> <?= sanitize($k['satuan']) ?></span>
                         </div>
                     </div>
-                    <div class="text-right flex-shrink-0 ml-3">
-                        <p class="text-sm font-bold text-slate-900"><?= number_format($k['total_pakai']) ?></p>
-                        <p class="text-[10px] text-slate-400"><?= sanitize($k['satuan']) ?></p>
+                    <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-primary-600 to-indigo-500 rounded-full transition-all" style="width: <?= $pct ?>%"></div>
                     </div>
                 </div>
-                <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full transition-all" style="width: <?= $pct ?>%"></div>
-                </div>
+                <?php endforeach; ?>
             </div>
-            <?php endforeach; ?>
+            <?php endif; ?>
         </div>
-        <?php endif; ?>
     </div>
 </div>
 
 <script>
-// ============ CHART TREN BULANAN ============
 const trenData = <?= json_encode($trenBulanan) ?>;
 new Chart(document.getElementById('chartTren'), {
     type: 'line',
@@ -205,26 +282,24 @@ new Chart(document.getElementById('chartTren'), {
             {
                 label: 'Proyek Baru',
                 data: trenData.map(d => d.baru),
-                borderColor: '#6366f1',
-                backgroundColor: 'rgba(99,102,241,0.1)',
+                borderColor: '#4f46e5',
+                backgroundColor: 'rgba(79, 70, 229, 0.1)',
                 fill: true,
                 tension: 0.4,
                 borderWidth: 2.5,
                 pointRadius: 4,
-                pointBackgroundColor: '#6366f1',
-                pointHoverRadius: 6,
+                pointBackgroundColor: '#4f46e5',
             },
             {
                 label: 'Proyek Selesai',
                 data: trenData.map(d => d.selesai),
                 borderColor: '#10b981',
-                backgroundColor: 'rgba(16,185,129,0.1)',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
                 fill: true,
                 tension: 0.4,
                 borderWidth: 2.5,
                 pointRadius: 4,
                 pointBackgroundColor: '#10b981',
-                pointHoverRadius: 6,
             }
         ]
     },
@@ -232,7 +307,7 @@ new Chart(document.getElementById('chartTren'), {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            legend: { position: 'bottom', labels: { boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyle: 'circle', font: { size: 11 }, padding: 12, color: '#64748b' } },
+            legend: { position: 'bottom', labels: { boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyle: 'circle', font: { size: 11 }, padding: 14 } },
             tooltip: { backgroundColor: '#1e293b', padding: 12, cornerRadius: 8 }
         },
         scales: {
@@ -242,14 +317,13 @@ new Chart(document.getElementById('chartTren'), {
     }
 });
 
-// ============ CHART STATUS ============
 const statusData = <?= json_encode($distribusi) ?>;
 const statusColors = {
-    survei: '#94a3b8', perencanaan: '#38bdf8', instalasi: '#6366f1',
+    survei: '#94a3b8', perencanaan: '#38bdf8', instalasi: '#4f46e5',
     selesai: '#10b981', ditunda: '#f59e0b'
 };
 new Chart(document.getElementById('chartStatus'), {
-    type: 'pie',
+    type: 'doughnut',
     data: {
         labels: statusData.map(d => d.status.charAt(0).toUpperCase() + d.status.slice(1)),
         datasets: [{
@@ -257,38 +331,39 @@ new Chart(document.getElementById('chartStatus'), {
             backgroundColor: statusData.map(d => statusColors[d.status] || '#94a3b8'),
             borderWidth: 2,
             borderColor: '#ffffff',
+            hoverOffset: 6
         }]
     },
     options: {
         responsive: true,
         maintainAspectRatio: false,
+        cutout: '65%',
         plugins: {
-            legend: { position: 'bottom', labels: { boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyle: 'circle', font: { size: 11 }, padding: 12, color: '#64748b' } }
+            legend: { position: 'bottom', labels: { boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyle: 'circle', font: { size: 11 }, padding: 12 } }
         }
     }
 });
 
-// ============ CHART TEKNISI ============
 <?php if (!empty($produktivitas)): ?>
 const teknisiData = <?= json_encode($produktivitas) ?>;
 new Chart(document.getElementById('chartTeknisi'), {
     type: 'bar',
     data: {
-        labels: teknisiData.map(d => d.nama.split(' ').slice(0,2).join(' ')),
+        labels: teknisiData.map(d => d.nama.split(' ').slice(0, 2).join(' ')),
         datasets: [
             {
-                label: 'Laporan',
+                label: 'Total Laporan',
                 data: teknisiData.map(d => d.total_laporan),
                 backgroundColor: '#10b981',
                 borderRadius: 6,
-                barThickness: 24,
+                barThickness: 18,
             },
             {
-                label: 'Proyek',
+                label: 'Proyek Ditangani',
                 data: teknisiData.map(d => d.total_proyek),
                 backgroundColor: '#0ea5e9',
                 borderRadius: 6,
-                barThickness: 24,
+                barThickness: 18,
             }
         ]
     },
@@ -297,7 +372,7 @@ new Chart(document.getElementById('chartTeknisi'), {
         maintainAspectRatio: false,
         indexAxis: 'y',
         plugins: {
-            legend: { position: 'bottom', labels: { boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyle: 'circle', font: { size: 11 }, padding: 12, color: '#64748b' } }
+            legend: { position: 'bottom', labels: { boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyle: 'circle', font: { size: 11 }, padding: 12 } }
         },
         scales: {
             x: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 }, color: '#94a3b8' }, grid: { color: '#f1f5f9' } },
