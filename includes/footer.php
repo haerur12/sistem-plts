@@ -5,6 +5,48 @@
 </div><!-- end main content -->
 </div><!-- end flex wrapper -->
 
+<?php
+// Tambahkan di includes/footer.php tepat setelah </div><!-- end flex wrapper -->
+$curr = $currentPage ?? '';
+?>
+<!-- ===== MOBILE BOTTOM NAVIGATION BAR (Hanya tampil di HP/Tablet < 1024px) ===== -->
+<nav class="lg:hidden fixed bottom-0 inset-x-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-40 px-2 py-1.5 flex items-center justify-around shadow-[0_-4px_20px_rgba(15,23,42,0.06)] no-print">
+    <a href="<?= BASE_URL ?>/pages/dashboard/index.php"
+       class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-colors <?= $curr === 'dashboard' ? 'text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-600' ?>">
+        <i class="bi bi-speedometer2 text-lg leading-none"></i>
+        <span class="text-[10px] mt-1">Home</span>
+    </a>
+
+    <?php if (!isGudang()): ?>
+    <a href="<?= BASE_URL ?>/pages/laporan/index.php"
+       class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-colors <?= $curr === 'laporan' ? 'text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-600' ?>">
+        <i class="bi bi-file-earmark-text text-lg leading-none"></i>
+        <span class="text-[10px] mt-1">Laporan</span>
+    </a>
+
+    <!-- Tombol Tengah Menonjol: Input Daily Report Cepat -->
+    <a href="<?= BASE_URL ?>/pages/laporan/create.php"
+       class="flex flex-col items-center justify-center -mt-5">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-600 to-indigo-700 text-white flex items-center justify-center shadow-lg shadow-primary-600/35 ring-4 ring-white dark:ring-slate-900 active:scale-95 transition-transform">
+            <i class="bi bi-plus-lg text-xl"></i>
+        </div>
+        <span class="text-[10px] font-bold text-primary-700 dark:text-primary-400 mt-1">Buat Baru</span>
+    </a>
+    <?php endif; ?>
+
+    <a href="<?= BASE_URL ?>/pages/komponen/status.php"
+       class="flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-colors <?= $curr === 'status-material' ? 'text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-600' ?>">
+        <i class="bi bi-boxes text-lg leading-none"></i>
+        <span class="text-[10px] mt-1">Stok</span>
+    </a>
+
+    <button type="button" onclick="openSidebar()"
+       class="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-slate-400 hover:text-slate-600 transition-colors">
+        <i class="bi bi-grid-fill text-lg leading-none"></i>
+        <span class="text-[10px] mt-1">Menu</span>
+    </button>
+</nav>
+
 <!-- ===== TOAST CONTAINER ===== -->
 <div id="toastContainer"
     class="fixed bottom-5 right-5 z-[999] flex flex-col gap-2.5 pointer-events-none"

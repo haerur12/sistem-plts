@@ -194,15 +194,15 @@ function tambahBarisActivity(teksDefault = '', isDone = true, triggerUpdate = tr
     const container = document.getElementById('containerActivity');
     const idx = container.querySelectorAll('.activity-row').length;
     const div = document.createElement('div');
-    div.className = 'flex items-center gap-2 activity-row group';
+    div.className = 'flex items-center gap-1.5 sm:gap-2 activity-row group';
     div.innerHTML = `
-        <span class="text-sm font-bold text-slate-400 w-5 text-right nomor-activity">${idx + 1}.</span>
-        <input type="text" name="activity_item[${idx}]" value="${teksDefault.replace(/"/g, '&quot;')}" class="form-input flex-1 activity-text" placeholder="Poin pekerjaan..." oninput="updatePreview()">
-        <label class="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors ${isDone ? 'bg-emerald-50 border-emerald-200' : ''}">
+        <span class="text-xs sm:text-sm font-bold text-slate-400 w-5 text-right nomor-activity">${idx + 1}.</span>
+        <input type="text" name="activity_item[${idx}]" value="${teksDefault.replace(/"/g, '&quot;')}" class="form-input py-2 px-3 text-base sm:text-sm flex-1 min-w-0 activity-text" placeholder="Poin pekerjaan..." oninput="updatePreview()">
+        <label class="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors flex-shrink-0 ${isDone ? 'bg-emerald-50 border-emerald-200' : ''}">
             <input type="checkbox" name="activity_done[${idx}]" value="1" class="w-4 h-4 text-emerald-600 rounded activity-check" ${isDone ? 'checked' : ''} onchange="updatePreview(); this.parentElement.classList.toggle('bg-emerald-50', this.checked); this.parentElement.classList.toggle('border-emerald-200', this.checked);">
-            <span class="text-xs font-bold text-slate-600">Selesai</span>
+            <span class="text-xs font-bold text-emerald-700 sm:text-slate-600"><span class="sm:hidden">✓</span><span class="hidden sm:inline">Selesai</span></span>
         </label>
-        <button type="button" class="p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100" onclick="hapusBarisActivity(this)"><i class="bi bi-trash"></i></button>
+        <button type="button" class="p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-xl transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0" onclick="hapusBarisActivity(this)"><i class="bi bi-trash"></i></button>
     `;
     container.appendChild(div);
     if (triggerUpdate) {
@@ -232,11 +232,11 @@ function tambahBarisNextPlan(teksDefault = '', triggerUpdate = true) {
     const container = document.getElementById('containerNextPlan');
     const idx = container.querySelectorAll('.nextplan-row').length;
     const div = document.createElement('div');
-    div.className = 'flex items-center gap-2 nextplan-row group';
+    div.className = 'flex items-center gap-1.5 sm:gap-2 nextplan-row group';
     div.innerHTML = `
-        <span class="text-sm font-bold text-slate-400 w-5 text-right nomor-nextplan">${idx + 1}.</span>
-        <input type="text" name="next_plan_item[]" value="${teksDefault.replace(/"/g, '&quot;')}" class="form-input flex-1 nextplan-text" placeholder="Rencana selanjutnya..." oninput="updatePreview()">
-        <button type="button" class="p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100" onclick="hapusBarisNextPlan(this)"><i class="bi bi-trash"></i></button>
+        <span class="text-xs sm:text-sm font-bold text-slate-400 w-5 text-right nomor-nextplan">${idx + 1}.</span>
+        <input type="text" name="next_plan_item[]" value="${teksDefault.replace(/"/g, '&quot;')}" class="form-input py-2 px-3 text-base sm:text-sm flex-1 min-w-0 nextplan-text" placeholder="Rencana selanjutnya..." oninput="updatePreview()">
+        <button type="button" class="p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-xl transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0" onclick="hapusBarisNextPlan(this)"><i class="bi bi-trash"></i></button>
     `;
     container.appendChild(div);
     if (triggerUpdate) {

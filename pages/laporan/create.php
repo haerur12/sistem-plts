@@ -224,15 +224,17 @@ include __DIR__ . '/../../includes/sidebar.php';
                         ];
                         foreach ($contoh_activity as $i => $act):
                         ?>
-                        <div class="flex items-center gap-2 activity-row group">
-                            <span class="text-sm font-bold text-slate-400 w-5 text-right nomor-activity"><?= $i + 1 ?>.</span>
-                            <input type="text" name="activity_item[<?= $i ?>]" class="form-input flex-1 activity-text" 
+                        <div class="flex items-center gap-1.5 sm:gap-2 activity-row group">
+                            <span class="text-xs sm:text-sm font-bold text-slate-400 w-5 text-right nomor-activity"><?= $i + 1 ?>.</span>
+                            <input type="text" name="activity_item[<?= $i ?>]" class="form-input py-2 px-3 text-base sm:text-sm flex-1 min-w-0 activity-text" 
                                    value="<?= sanitize($act['teks']) ?>" placeholder="Poin pekerjaan..." oninput="updatePreview()">
-                            <label class="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors <?= $act['done'] ? 'bg-emerald-50 border-emerald-200' : '' ?>">
+                            <label class="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors flex-shrink-0 <?= $act['done'] ? 'bg-emerald-50 border-emerald-200' : '' ?>">
                                 <input type="checkbox" name="activity_done[<?= $i ?>]" value="1" class="w-4 h-4 text-emerald-600 rounded activity-check" <?= $act['done'] ? 'checked' : '' ?> onchange="updatePreview(); this.parentElement.classList.toggle('bg-emerald-50', this.checked); this.parentElement.classList.toggle('border-emerald-200', this.checked);">
-                                <span class="text-xs font-bold text-slate-600">Selesai</span>
+                                <span class="text-xs font-bold text-emerald-700 sm:text-slate-600"><span class="sm:hidden">✓</span><span class="hidden sm:inline">Selesai</span></span>
                             </label>
-                            <button type="button" class="p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100" onclick="hapusBarisActivity(this)"><i class="bi bi-trash"></i></button>
+                            <button type="button" class="p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-xl transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0" onclick="hapusBarisActivity(this)">
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </div>
                         <?php endforeach; ?>
                     </div>
@@ -252,11 +254,13 @@ include __DIR__ . '/../../includes/sidebar.php';
                         $contoh_next = ['Pengukuran Ampere Inverter 1 & 2', 'Pengerjaan Sample tagging Tray'];
                         foreach ($contoh_next as $j => $np):
                         ?>
-                        <div class="flex items-center gap-2 nextplan-row group">
-                            <span class="text-sm font-bold text-slate-400 w-5 text-right nomor-nextplan"><?= $j + 1 ?>.</span>
-                            <input type="text" name="next_plan_item[]" class="form-input flex-1 nextplan-text" 
+                        <div class="flex items-center gap-1.5 sm:gap-2 nextplan-row group">
+                            <span class="text-xs sm:text-sm font-bold text-slate-400 w-5 text-right nomor-nextplan"><?= $j + 1 ?>.</span>
+                            <input type="text" name="next_plan_item[]" class="form-input py-2 px-3 text-base sm:text-sm flex-1 min-w-0 nextplan-text" 
                                    value="<?= sanitize($np) ?>" placeholder="Rencana selanjutnya..." oninput="updatePreview()">
-                            <button type="button" class="p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100" onclick="hapusBarisNextPlan(this)"><i class="bi bi-trash"></i></button>
+                            <button type="button" class="p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-xl transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0" onclick="hapusBarisNextPlan(this)">
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </div>
                         <?php endforeach; ?>
                     </div>
@@ -311,6 +315,19 @@ include __DIR__ . '/../../includes/sidebar.php';
                             <p class="text-sm font-semibold text-slate-700">Klik atau seret foto dokumentasi ke sini</p>
                             <p class="text-xs text-slate-400 mt-1">Otomatis dikompresi agar hemat kuota & cepat diunggah (JPG, PNG, WebP)</p>
                             <input type="file" name="foto_lapangan[]" id="inputFotoLapangan" class="hidden" accept="image/*" multiple onchange="handleFotoSelect(this.files)">
+                        </div>
+
+                        <!-- Tombol Cepat Buka Kamera Belakang Khusus Mobile -->
+                        <div class="grid grid-cols-2 gap-2.5 mt-2.5 sm:hidden">
+                            <button type="button" onclick="document.getElementById('inputKameraLangsung').click()"
+                                class="py-2.5 px-3 rounded-xl bg-primary-50 border border-primary-200 text-primary-700 text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                                <i class="bi bi-camera-fill text-sm"></i> Ambil Foto Kamera
+                            </button>
+                            <button type="button" onclick="document.getElementById('inputFotoLapangan').click()"
+                                class="py-2.5 px-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                                <i class="bi bi-images text-sm"></i> Pilih dari Galeri
+                            </button>
+                            <input type="file" id="inputKameraLangsung" class="hidden" accept="image/*" capture="environment" onchange="handleFotoSelect(this.files)">
                         </div>
 
                         <!-- Grid Preview Foto Sebelum Upload -->
