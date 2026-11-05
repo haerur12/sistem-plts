@@ -1126,3 +1126,118 @@ html.dark .skeleton {
 .foto-lapangan-thumb:hover {
     transform: scale(1.02);
 }
+
+
+/* =========================================================================
+   ENTERPRISE DARK MODE GLOBAL OVERRIDES (OTOMATIS UNTUK SEMUA HALAMAN)
+   ========================================================================= */
+@media screen {
+    html.dark body {
+        background-color: #0b1120 !important;
+        color: #e2e8f0 !important;
+    }
+
+    /* 1. Kartu, Kontainer Utama, & Header */
+    html.dark .card,
+    html.dark header,
+    html.dark .bg-white {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f1f5f9 !important;
+    }
+
+    /* 2. Latar Sekunder, Tabel Header, & Filter Box */
+    html.dark .bg-slate-50,
+    html.dark .bg-slate-50\/50,
+    html.dark .bg-slate-50\/70,
+    html.dark .bg-slate-50\/80,
+    html.dark .bg-slate-100,
+    html.dark .bg-slate-100\/80,
+    html.dark .table-header {
+        background-color: #0f172a !important;
+        border-color: #334155 !important;
+        color: #94a3b8 !important;
+    }
+
+    /* 3. Hover Baris Tabel & Elemen Interaktif */
+    html.dark .table-row:hover,
+    html.dark .hover\:bg-slate-50:hover,
+    html.dark .hover\:bg-slate-50\/70:hover,
+    html.dark .hover\:bg-slate-50\/80:hover,
+    html.dark .hover\:bg-slate-100:hover {
+        background-color: rgba(51, 65, 85, 0.45) !important;
+    }
+
+    /* 4. Tipografi & Teks */
+    html.dark .text-slate-900,
+    html.dark .text-slate-800 {
+        color: #f8fafc !important;
+    }
+    html.dark .text-slate-700,
+    html.dark .text-slate-600 {
+        color: #cbd5e1 !important;
+    }
+    html.dark .text-slate-500,
+    html.dark .text-slate-400 {
+        color: #94a3b8 !important;
+    }
+
+    /* 5. Garis Pemisah (Borders & Dividers) */
+    html.dark .border-slate-100,
+    html.dark .border-slate-200,
+    html.dark .border-slate-200\/80,
+    html.dark .border-slate-300 {
+        border-color: #334155 !important;
+    }
+    html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+        border-color: #334155 !important;
+    }
+
+    /* 6. Formulir Input, Select, & Textarea */
+    html.dark .form-input,
+    html.dark .form-select,
+    html.dark .form-textarea,
+    html.dark input[type="text"],
+    html.dark input[type="email"],
+    html.dark input[type="password"],
+    html.dark input[type="number"],
+    html.dark input[type="date"],
+    html.dark select,
+    html.dark textarea {
+        background-color: #0f172a !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+    html.dark .form-input:focus,
+    html.dark .form-select:focus,
+    html.dark .form-textarea:focus {
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25) !important;
+    }
+    html.dark .form-label {
+        color: #cbd5e1 !important;
+    }
+
+    /* 7. Tombol Sekunder & Progress Track */
+    html.dark .btn-secondary {
+        background-color: #1e293b !important;
+        border-color: #475569 !important;
+        color: #e2e8f0 !important;
+    }
+    html.dark .btn-secondary:hover {
+        background-color: #334155 !important;
+    }
+    html.dark .progress-track {
+        background-color: #334155 !important;
+    }
+
+    /* 8. Penyesuaian Peta Leaflet di Mode Gelap agar Tidak Silau */
+    html.dark .leaflet-tile-pane {
+        filter: brightness(0.82) contrast(1.1) saturate(0.85);
+    }
+    html.dark .leaflet-popup-content-wrapper,
+    html.dark .leaflet-popup-tip {
+        background-color: #1e293b !important;
+        color: #f8fafc !important;
+    }
+}

@@ -423,3 +423,72 @@ document.addEventListener('DOMContentLoaded', () => {
         setInterval(pollNotifikasi, 30000);
     }, 5000);
 });
+
+
+/* =========================================================================
+   GLOBAL UX ENHANCEMENTS: ANTI DOUBLE-SUBMIT & DARK MODE SYNC
+   ========================================================================= */
+document.addEventListener('DOMContentLoaded', function () {
+    // 1. Anti Double-Submit pada seluruh Form POST
+    document.querySelectorAll('form[method="POST"], form[method="post"]').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            if (e.defaultPrevented) return;
+            if (!form.checkValidity()) return;
+
+            // Cegah pengiriman ulang jika form sedang diproses
+            if (form.dataset.submitting === 'true') {
+                e.preventDefault();
+                return;
+            }
+            form.dataset.submitting = 'true';
+
+            const submitBtn = form.querySelector('button[type="submit"]:not([data-no-loading])');
+            if (submitBtn) {
+                const rect = submitBtn.getBoundingClientRect();
+                if (rect.width > 0) {
+                    submitBtn.style.minWidth = rect.width + 'px';
+                }
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+
+                const originalText = submitBtn.innerHTML;
+                submitBtn.dataset.originalHtml = originalText;
+                submitBtn.innerHTML = '<i class="bi bi-arrow-repeat animate-spin inline-block"></i> <span>Memproses...</span>';
+
+                // Safety fallback: aktifkan kembali setelah 12 detik jika koneksi terputus
+                setTimeout(function () {
+                    form.dataset.submitting = 'false';
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                    if (submitBtn.dataset.originalHtml) {
+                        submitBtn.innerHTML = submitBtn.dataset.originalHtml;
+                    }
+                }, 12000);
+            }
+        });
+    });
+
+    // 2. Sinkronisasi warna teks Chart.js saat Dark Mode aktif
+    syncChartTheme();
+});
+
+function syncChartTheme() {
+    if (typeof Chart === 'undefined') return;
+    const isDark = document.documentElement.classList.contains('dark');
+    Chart.defaults.color = isDark ? '#94a3b8' : '#64748b';
+    Chart.defaults.borderColor = isDark ? '#334155' : '#f1f5f9';
+}
+
+// Override atau pastikan fungsi toggleDarkMode memperbarui localStorage & ikon secara konsisten
+window.toggleDarkMode = function () {
+    const htmlEl = document.documentElement;
+    const isDark = htmlEl.classList.toggle('dark');
+    localStorage.setItem('plts_theme', isDark ? 'dark' : 'light');
+    localStorage.setItem('darkMode', isDark ? 'true' : 'false');
+
+    const icon = document.getElementById('darkModeIcon');
+    if (icon) {
+        icon.className = isDark ? 'bi bi-sun-fill text-amber-400 text-lg' : 'bi bi-moon-stars text-slate-600 text-lg';
+    }
+    syncChartTheme();
+};

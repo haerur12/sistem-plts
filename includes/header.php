@@ -135,6 +135,12 @@ html.dark #searchDropdown {
     border-color: var(--slate-700);
 }
 </style>
+    <!-- Anti-FOUC Dark Mode: Langsung terapkan class dark sebelum body dirender -->
+    <script>
+        if (localStorage.getItem('plts_theme') === 'dark' || localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
 </head>
 <body id="flashData" class="bg-slate-50 text-slate-800 antialiased" <?= $flash ? 'data-flash-type="'.htmlspecialchars($flash['type']).'" data-flash-msg="'.htmlspecialchars($flash['message']).'"' : '' ?>>
 <div class="flex h-screen overflow-hidden">
