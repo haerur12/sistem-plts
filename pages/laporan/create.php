@@ -362,9 +362,14 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 <p class="text-[11px] opacity-80">PT Energy Lima Pilar</p>
                             </div>
                         </div>
-                        <button type="button" class="bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors" onclick="copyKeWhatsApp()">
-                            Copy Teks
-                        </button>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" class="bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors" onclick="copyKeWhatsApp()">
+                                Copy Teks
+                            </button>
+                            <button type="button" class="bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow-sm" onclick="kirimKeWA()">
+                                <i class="bi bi-whatsapp"></i> Share WA
+                            </button>
+                        </div>
                     </div>
 
                     <!-- WA Body -->

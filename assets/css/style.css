@@ -1173,10 +1173,12 @@ html.dark .skeleton {
     html.dark .text-slate-800 {
         color: #f8fafc !important;
     }
+
     html.dark .text-slate-700,
     html.dark .text-slate-600 {
         color: #cbd5e1 !important;
     }
+
     html.dark .text-slate-500,
     html.dark .text-slate-400 {
         color: #94a3b8 !important;
@@ -1189,7 +1191,8 @@ html.dark .skeleton {
     html.dark .border-slate-300 {
         border-color: #334155 !important;
     }
-    html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+
+    html.dark .divide-slate-100> :not([hidden])~ :not([hidden]) {
         border-color: #334155 !important;
     }
 
@@ -1208,12 +1211,14 @@ html.dark .skeleton {
         border-color: #334155 !important;
         color: #f8fafc !important;
     }
+
     html.dark .form-input:focus,
     html.dark .form-select:focus,
     html.dark .form-textarea:focus {
         border-color: #6366f1 !important;
         box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25) !important;
     }
+
     html.dark .form-label {
         color: #cbd5e1 !important;
     }
@@ -1224,9 +1229,11 @@ html.dark .skeleton {
         border-color: #475569 !important;
         color: #e2e8f0 !important;
     }
+
     html.dark .btn-secondary:hover {
         background-color: #334155 !important;
     }
+
     html.dark .progress-track {
         background-color: #334155 !important;
     }
@@ -1235,9 +1242,169 @@ html.dark .skeleton {
     html.dark .leaflet-tile-pane {
         filter: brightness(0.82) contrast(1.1) saturate(0.85);
     }
+
     html.dark .leaflet-popup-content-wrapper,
     html.dark .leaflet-popup-tip {
         background-color: #1e293b !important;
         color: #f8fafc !important;
     }
+}
+
+
+/* =========================================================================
+   CLOUDGUARD SAAS BENTO THEME (DENGAN TONE WARNA INDIGO/TEAL ELP)
+   ========================================================================= */
+
+/* 1. Background Canvas & Font Halus */
+body {
+    background-color: #f8fafc !important;
+    letter-spacing: -0.011em;
+}
+
+/* 2. Sidebar Navigation Pill (Persis Gaya CloudGuard) */
+#sidebar .sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 0.85rem;
+    border-radius: 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #64748b !important;
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
+}
+
+#sidebar .sidebar-link i {
+    font-size: 0.95rem;
+    color: #94a3b8;
+    transition: color 0.18s ease;
+}
+
+#sidebar .sidebar-link:hover {
+    color: #0f172a !important;
+    background-color: rgba(255, 255, 255, 0.65) !important;
+}
+
+#sidebar .sidebar-link:hover i {
+    color: #4f46e5 !important;
+}
+
+/* Menu Aktif: Kapsul Putih Melayang + Aksen Indigo ELP */
+#sidebar .sidebar-link.active {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    font-weight: 700;
+    border-color: rgba(226, 232, 240, 0.9);
+    box-shadow: 0 2px 5px -1px rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
+}
+
+#sidebar .sidebar-link.active i {
+    color: #4f46e5 !important;
+    /* Tetap menggunakan Indigo Utama ELP */
+}
+
+/* 3. Kartu Bento & Stat Cards (Clean 1px Border & Soft Elevation) */
+.card {
+    background-color: #ffffff;
+    border: 1px solid #e8edf3 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.025), 0 1px 2px rgba(15, 23, 42, 0.02) !important;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card:hover {
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 6px 18px -4px rgba(15, 23, 42, 0.05) !important;
+}
+
+/* Hilangkan garis kiri tebal pada stat-card, ganti dengan gaya bersih CloudGuard */
+.stat-card {
+    border-left: 1px solid #e8edf3 !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    display: none !important;
+}
+
+/* 4. Tabel Gaya SaaS Modern (Clean Dividers & Subtle Header) */
+.table-header {
+    background-color: #fcfdfe !important;
+    color: #64748b !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    padding: 11px 16px !important;
+    border-bottom: 1px solid #eef2f6 !important;
+}
+
+.table-cell {
+    padding: 13px 16px !important;
+    font-size: 13px !important;
+    color: #334155;
+}
+
+.table-row {
+    transition: background-color 0.15s ease;
+}
+
+.table-row:hover {
+    background-color: #f8fafc !important;
+}
+
+/* 5. Tombol Gaya Pill / SaaS Action Buttons */
+.btn-primary {
+    background: linear-gradient(180deg, #4f46e5 0%, #4338ca 100%) !important;
+    border: 1px solid #3730a3 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 1px 2px rgba(79, 70, 229, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+    font-weight: 600 !important;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(180deg, #4338ca 0%, #3730a3 100%) !important;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background-color: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #334155 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+    font-weight: 600 !important;
+}
+
+.btn-secondary:hover {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+/* 6. Penyesuaian Sidebar CloudGuard saat Dark Mode Aktif */
+html.dark #sidebar {
+    background-color: #0f172a !important;
+    border-color: #1e293b !important;
+}
+
+html.dark #sidebar .sidebar-link {
+    color: #94a3b8 !important;
+}
+
+html.dark #sidebar .sidebar-link:hover {
+    background-color: rgba(30, 41, 59, 0.7) !important;
+    color: #f8fafc !important;
+}
+
+html.dark #sidebar .sidebar-link.active {
+    background-color: #1e293b !important;
+    color: #ffffff !important;
+    border-color: #334155 !important;
+}
+
+html.dark #sidebar .sidebar-link.active i {
+    color: #818cf8 !important;
 }

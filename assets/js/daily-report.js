@@ -359,9 +359,33 @@ function copyKeWhatsApp() {
     const teks = document.getElementById('waOutput').innerText;
     navigator.clipboard.writeText(teks).then(() => {
         const alertBox = document.getElementById('copyAlert');
-        alertBox.classList.remove('hidden');
-        setTimeout(() => alertBox.classList.add('hidden'), 3000);
+        if (alertBox) {
+            alertBox.classList.remove('hidden');
+            setTimeout(() => alertBox.classList.add('hidden'), 3000);
+        }
+        if (typeof Toast !== 'undefined') {
+            Toast.show('Teks WhatsApp berhasil disalin ke Clipboard!', 'success');
+        }
     });
+}
+
+function kirimKeWA() {
+    const text = document.getElementById('waOutput')?.innerText || document.getElementById('waHiddenInput')?.value || document.getElementById('waPreviewBox')?.innerText || '';
+    if (!text.trim()) return;
+
+    // Otomatis salin ke clipboard dulu
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text);
+    }
+
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+        // Di HP langsung panggil aplikasi WhatsApp native
+        window.location.href = 'whatsapp://send?text=' + encodeURIComponent(text);
+    } else {
+        // Di Laptop langsung tembak ke web.whatsapp.com (tanpa lewat api.whatsapp.com)
+        window.open('https://web.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank');
+    }
 }
 
 // ============================================================

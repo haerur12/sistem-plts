@@ -486,11 +486,47 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 class="px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition-colors flex items-center gap-1">
                             <i class="bi bi-clipboard-check"></i> Copy
                         </button>
-                        <a href="https://api.whatsapp.com/send?text=<?= rawurlencode($teks_wa_lengkap) ?>"
-                           target="_blank"
-                           class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold transition-colors flex items-center gap-1 shadow-sm">
-                            <i class="bi bi-send-fill"></i> Share WA
-                        </a>
+                        <!-- Tombol Smart Share WA + Menu Pilihan Cepat -->
+                        <div class="relative inline-block">
+                            <button type="button" onclick="smartShareWA()"
+                                class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer">
+                                <i class="bi bi-whatsapp"></i> Share WA
+                            </button>
+
+                            <!-- Popup Mini Pilihan khusus Laptop/PC (Bebas Blokir api.whatsapp.com) -->
+                            <div id="waShareMenu" class="hidden absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-slate-200 shadow-2xl p-2 z-50 text-left">
+                                <div class="px-3 py-1.5 border-b border-slate-100 mb-1">
+                                    <p class="text-[11px] font-extrabold text-emerald-600 flex items-center gap-1">
+                                        <i class="bi bi-check2-circle"></i> Teks otomatis disalin!
+                                    </p>
+                                    <p class="text-[10px] text-slate-400">Pilih cara membuka WhatsApp:</p>
+                                </div>
+
+                                <!-- Opsi 1: Buka Aplikasi WhatsApp Desktop / HP Langsung (Tanpa Browser) -->
+                                <button type="button" onclick="bukaWADirectApp()"
+                                    class="w-full px-3 py-2 rounded-xl hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 text-xs font-bold flex items-center gap-2.5 transition-colors">
+                                    <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                                        <i class="bi bi-whatsapp"></i>
+                                    </span>
+                                    <div>
+                                        <div>Aplikasi WhatsApp</div>
+                                        <div class="text-[10px] font-normal text-slate-400">Buka WA Desktop / App langsung</div>
+                                    </div>
+                                </button>
+
+                                <!-- Opsi 2: Buka WhatsApp Web (Bypass api.whatsapp.com) -->
+                                <button type="button" onclick="bukaWAWebLangsung()"
+                                    class="w-full px-3 py-2 rounded-xl hover:bg-sky-50 text-slate-700 hover:text-sky-700 text-xs font-bold flex items-center gap-2.5 transition-colors mt-1">
+                                    <span class="w-7 h-7 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center flex-shrink-0">
+                                        <i class="bi bi-globe2"></i>
+                                    </span>
+                                    <div>
+                                        <div>WhatsApp Web Browser</div>
+                                        <div class="text-[10px] font-normal text-slate-400">Langsung ke web.whatsapp.com</div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -543,6 +579,64 @@ function salinTeksDetailWA() {
         }
     });
 }
+
+function getWaReportText() {
+    // Mengambil teks dari elemen preview WA di halaman show.php
+    const el = document.getElementById('waDetailText') || document.getElementById('waTextContent') || document.getElementById('waPreviewBox');
+    return el ? el.innerText.trim() : '';
+}
+
+function smartShareWA() {
+    const text = getWaReportText();
+    if (!text) return;
+
+    // 1. Selalu salin teks ke clipboard terlebih dahulu sebagai pengaman
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).catch(() => {});
+    }
+
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    // 2. Jika dibuka dari HP: Gunakan Native Share Sheet atau protokol whatsapp:// (Anti-Blokir ISP)
+    if (isMobile) {
+        window.location.href = 'whatsapp://send?text=' + encodeURIComponent(text);
+        return;
+    }
+
+    // 3. Jika dibuka dari Laptop/PC: Tampilkan menu pilihan (App Desktop vs web.whatsapp.com)
+    const menu = document.getElementById('waShareMenu');
+    if (menu) {
+        menu.classList.toggle('hidden');
+    } else {
+        // Fallback langsung ke web.whatsapp.com (bukan api.whatsapp.com)
+        window.open('https://web.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank');
+    }
+}
+
+function bukaWADirectApp() {
+    const text = getWaReportText();
+    document.getElementById('waShareMenu')?.classList.add('hidden');
+    // Membuka aplikasi WhatsApp yang ter-install di Windows/Mac/HP tanpa lewat api.whatsapp.com
+    window.location.href = 'whatsapp://send?text=' + encodeURIComponent(text);
+    if (typeof Toast !== 'undefined') {
+        Toast.show('Membuka Aplikasi WhatsApp... (Teks juga sudah disalin di Clipboard)', 'success');
+    }
+}
+
+function bukaWAWebLangsung() {
+    const text = getWaReportText();
+    document.getElementById('waShareMenu')?.classList.add('hidden');
+    // Langsung menuju web.whatsapp.com/send tanpa melewati redirect api.whatsapp.com yang sering timeout
+    window.open('https://web.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank');
+}
+
+// Tutup popup menu jika klik di luar
+document.addEventListener('click', function(e) {
+    const menu = document.getElementById('waShareMenu');
+    if (menu && !menu.parentElement.contains(e.target)) {
+        menu.classList.add('hidden');
+    }
+});
 
 // Lightbox Gallery Logic
 const galleryPhotos = <?= json_encode(array_map(function ($f) use ($resolveFotoUrl) {
