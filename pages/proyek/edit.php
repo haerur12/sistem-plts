@@ -175,18 +175,124 @@ include __DIR__ . '/../../includes/sidebar.php';
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="form-label">Latitude <span class="text-slate-400 font-normal">(Opsional)</span></label>
-                        <input type="text" name="latitude" class="form-input"
-                               value="<?= sanitize($proyek['latitude'] ?? '') ?>" placeholder="Contoh: -6.3561">
+<!-- INTERACTIVE MAP PICKER (LEAFLET.JS + OPENSTREETMAP) -->
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <label class="form-label mb-0 flex items-center gap-1.5">
+                                <i class="bi bi-geo-alt-fill text-red-500"></i> Titik Koordinat Peta Lokasi Proyek <span class="text-slate-400 font-normal">(Opsional)</span>
+                            </label>
+                            <p class="text-[11px] text-slate-400">Klik langsung pada peta atau geser pin biru untuk menentukan titik lokasi proyek PLTS</p>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="ambilLokasiGPS()" class="btn-secondary btn-sm text-xs">
+                                <i class="bi bi-crosshair text-primary-600"></i> Lokasi Saya
+                            </button>
+                            <button type="button" onclick="resetKoordinatPeta()" class="btn-secondary btn-sm text-xs text-red-600">
+                                <i class="bi bi-x-lg"></i> Reset
+                            </button>
+                        </div>
                     </div>
-                    <div>
-                        <label class="form-label">Longitude <span class="text-slate-400 font-normal">(Opsional)</span></label>
-                        <input type="text" name="longitude" class="form-input"
-                               value="<?= sanitize($proyek['longitude'] ?? '') ?>" placeholder="Contoh: 107.2831">
+
+                    <!-- Kanvas Peta Interaktif -->
+                    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                    <div id="mapPickerCanvas" class="w-full h-64 rounded-xl border border-slate-200 shadow-2xs z-10"></div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-500 uppercase">Latitude</label>
+                            <input type="text" name="latitude" id="inputLat" class="form-input py-1.5 text-xs mt-1"
+                                   value="<?= isset($proyek['latitude']) ? sanitize($proyek['latitude']) : '' ?>"
+                                   placeholder="Contoh: -6.356100" oninput="sinkronInputKePeta()">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-500 uppercase">Longitude</label>
+                            <input type="text" name="longitude" id="inputLng" class="form-input py-1.5 text-xs mt-1"
+                                   value="<?= isset($proyek['longitude']) ? sanitize($proyek['longitude']) : '' ?>"
+                                   placeholder="Contoh: 107.283100" oninput="sinkronInputKePeta()">
+                        </div>
                     </div>
                 </div>
+
+                <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                <script>
+                let mapPicker, mapMarker;
+                document.addEventListener('DOMContentLoaded', function() {
+                    const latEl = document.getElementById('inputLat');
+                    const lngEl = document.getElementById('inputLng');
+
+                    // Default ke area Jabodetabek/Karawang (-6.30, 107.15) jika belum ada koordinat
+                    const initLat = parseFloat(latEl.value) || -6.300000;
+                    const initLng = parseFloat(lngEl.value) || 107.150000;
+                    const hasInit = (latEl.value.trim() !== '' && lngEl.value.trim() !== '');
+
+                    mapPicker = L.map('mapPickerCanvas').setView([initLat, initLng], hasInit ? 15 : 10);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                        attribution: '© OpenStreetMap'
+                    }).addTo(mapPicker);
+
+                    if (hasInit) {
+                        pasangPinPeta(initLat, initLng);
+                    }
+
+                    mapPicker.on('click', function(e) {
+                        const lat = e.latlng.lat.toFixed(6);
+                        const lng = e.latlng.lng.toFixed(6);
+                        latEl.value = lat;
+                        lngEl.value = lng;
+                        pasangPinPeta(lat, lng);
+                    });
+                });
+
+                function pasangPinPeta(lat, lng) {
+                    if (mapMarker) {
+                        mapMarker.setLatLng([lat, lng]);
+                    } else {
+                        mapMarker = L.marker([lat, lng], { draggable: true }).addTo(mapPicker);
+                        mapMarker.on('dragend', function(e) {
+                            const pos = e.target.getLatLng();
+                            document.getElementById('inputLat').value = pos.lat.toFixed(6);
+                            document.getElementById('inputLng').value = pos.lng.toFixed(6);
+                        });
+                    }
+                }
+
+                function sinkronInputKePeta() {
+                    const lat = parseFloat(document.getElementById('inputLat').value);
+                    const lng = parseFloat(document.getElementById('inputLng').value);
+                    if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                        pasangPinPeta(lat, lng);
+                        mapPicker.panTo([lat, lng]);
+                    }
+                }
+
+                function ambilLokasiGPS() {
+                    if (!navigator.geolocation) {
+                        alert('Browser Anda tidak mendukung fitur GPS.');
+                        return;
+                    }
+                    navigator.geolocation.getCurrentPosition(function(pos) {
+                        const lat = pos.coords.latitude.toFixed(6);
+                        const lng = pos.coords.longitude.toFixed(6);
+                        document.getElementById('inputLat').value = lat;
+                        document.getElementById('inputLng').value = lng;
+                        pasangPinPeta(lat, lng);
+                        mapPicker.setView([lat, lng], 16);
+                    }, function() {
+                        alert('Gagal mengambil lokasi GPS. Pastikan izin lokasi browser diaktifkan.');
+                    });
+                }
+
+                function resetKoordinatPeta() {
+                    document.getElementById('inputLat').value = '';
+                    document.getElementById('inputLng').value = '';
+                    if (mapMarker) {
+                        mapPicker.removeLayer(mapMarker);
+                        mapMarker = null;
+                    }
+                }
+                </script>
 
                 <div>
                     <label class="form-label">Deskripsi & Ruang Lingkup Pekerjaan</label>

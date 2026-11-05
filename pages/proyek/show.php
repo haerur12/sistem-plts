@@ -494,6 +494,58 @@ include __DIR__ . '/../../includes/sidebar.php';
                 </div>
             </div>
 
+            <!-- Kartu Peta Lokasi Proyek Interaktif -->
+            <div class="card overflow-hidden">
+                <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <i class="bi bi-geo-alt-fill text-red-500"></i> Peta Titik Instalasi
+                    </h3>
+                    <?php if (!empty($proyek['latitude']) && !empty($proyek['longitude'])): ?>
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=<?= urlencode($proyek['latitude'] . ',' . $proyek['longitude']) ?>"
+                       target="_blank" class="text-xs font-bold text-primary-600 hover:underline inline-flex items-center gap-1">
+                        <i class="bi bi-sign-turn-right-fill"></i> Rute Maps
+                    </a>
+                    <?php endif; ?>
+                </div>
+
+                <?php if (!empty($proyek['latitude']) && !empty($proyek['longitude'])): ?>
+                <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                <div id="proyekDetailMap" class="w-full h-56 z-10"></div>
+                <div class="px-4 py-2.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                    <span>Koordinat: <strong><?= sanitize($proyek['latitude']) ?>, <?= sanitize($proyek['longitude']) ?></strong></span>
+                    <a href="https://www.google.com/maps?q=<?= urlencode($proyek['latitude'] . ',' . $proyek['longitude']) ?>"
+                       target="_blank" class="text-primary-600 font-semibold hover:underline">Buka Penuh ↗</a>
+                </div>
+                <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const lat = <?= (float)$proyek['latitude'] ?>;
+                    const lng = <?= (float)$proyek['longitude'] ?>;
+                    const dMap = L.map('proyekDetailMap').setView([lat, lng], 15);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                        attribution: '© OpenStreetMap'
+                    }).addTo(dMap);
+                    L.marker([lat, lng]).addTo(dMap)
+                        .bindPopup('<strong><?= addslashes(sanitize($proyek['nama_proyek'])) ?></strong><br><span style="font-size:11px;"><?= addslashes(sanitize($proyek['lokasi'])) ?></span>')
+                        .openPopup();
+                });
+                </script>
+                <?php else: ?>
+                <div class="p-6 text-center">
+                    <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2">
+                        <i class="bi bi-map"></i>
+                    </div>
+                    <p class="text-xs font-semibold text-slate-600">Titik Koordinat Belum Diatur</p>
+                    <p class="text-[11px] text-slate-400 mt-0.5 mb-3">Tambahkan koordinat melalui menu Edit Proyek untuk menampilkan peta interaktif.</p>
+                    <a href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($proyek['lokasi']) ?>"
+                       target="_blank" class="btn-secondary btn-sm text-xs">
+                        <i class="bi bi-search"></i> Cari Lokasi di Google Maps
+                    </a>
+                </div>
+                <?php endif; ?>
+            </div>
+
             <!-- Tahapan Jadwal Proyek -->
             <div class="card p-5">
                 <div class="flex items-center justify-between mb-3 pb-2.5 border-b border-slate-100">
