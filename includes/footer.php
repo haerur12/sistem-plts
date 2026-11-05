@@ -105,6 +105,6 @@ $curr = $currentPage ?? '';
 }
 </style>
 
-<script src="<?= BASE_URL ?>js/app.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/app.js?v=7"></script>
 </body>
 </html>

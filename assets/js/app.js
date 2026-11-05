@@ -10,7 +10,9 @@ const DarkMode = {
         const html = document.documentElement;
         const isDark = html.classList.toggle('dark');
         localStorage.setItem('plts_theme', isDark ? 'dark' : 'light');
+        localStorage.setItem('darkMode', isDark ? 'true' : 'false');
         this.updateIcon(isDark);
+        if (typeof syncChartTheme === 'function') syncChartTheme();
         // Update Chart.js warna jika ada chart
         if (window.activeCharts) {
             window.activeCharts.forEach(chart => chart.update());
@@ -19,16 +21,17 @@ const DarkMode = {
 
     init() {
         const saved = localStorage.getItem('plts_theme');
+        const savedLegacy = localStorage.getItem('darkMode');
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const isDark = saved === 'dark' || (!saved && prefersDark);
+        const isDark = saved === 'dark' || savedLegacy === 'true' || (!saved && !savedLegacy && prefersDark);
         document.documentElement.classList.toggle('dark', isDark);
         this.updateIcon(isDark);
     },
 
     updateIcon(isDark) {
-        const icon = document.getElementById('darkIcon');
+        const icon = document.getElementById('darkIcon') || document.getElementById('darkModeIcon');
         if (!icon) return;
-        icon.className = isDark ? 'bi bi-sun text-base' : 'bi bi-moon text-base';
+        icon.className = isDark ? 'bi bi-sun-fill text-amber-400 text-base' : 'bi bi-moon text-base';
     }
 };
 
@@ -481,14 +484,5 @@ function syncChartTheme() {
 
 // Override atau pastikan fungsi toggleDarkMode memperbarui localStorage & ikon secara konsisten
 window.toggleDarkMode = function () {
-    const htmlEl = document.documentElement;
-    const isDark = htmlEl.classList.toggle('dark');
-    localStorage.setItem('plts_theme', isDark ? 'dark' : 'light');
-    localStorage.setItem('darkMode', isDark ? 'true' : 'false');
-
-    const icon = document.getElementById('darkModeIcon');
-    if (icon) {
-        icon.className = isDark ? 'bi bi-sun-fill text-amber-400 text-lg' : 'bi bi-moon-stars text-slate-600 text-lg';
-    }
-    syncChartTheme();
+    DarkMode.toggle();
 };
