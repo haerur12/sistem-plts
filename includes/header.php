@@ -91,28 +91,7 @@ main {
     animation: fadeUp 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Sidebar mobile */
-@media (max-width: 1023px) {
-    #sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        height: 100vh;
-        z-index: 200;
-        transform: translateX(-100%);
-        transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-    #sidebar.open { transform: translateX(0); }
-    #sidebarOverlay {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(15, 23, 42, 0.5);
-        backdrop-filter: blur(4px);
-        z-index: 199;
-    }
-    #sidebarOverlay.show { display: block; }
-}
+
 
 /* Search dropdown */
 #searchDropdown {
